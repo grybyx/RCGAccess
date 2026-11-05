@@ -1,0 +1,215 @@
+RCGAccess – Zugänglichkeits-Mod für River City Girls
+Version 0.1.8
+
+Neu in Version 0.1.8
+- Belohnungen (zum Beispiel nach dem Endgegner): jede Belohnung wird vollständig angesagt ("1000 Erfahrung",
+  "100 Dollar", "Schulschlüssel") mit "1 von 4" und "Weiter mit A". Mit A geht es zur nächsten Belohnung.
+- Handy (Start, das Pausemenü des Spiels): beim Öffnen "Handy, das Spiel ist pausiert" und welche Seite mit LT und RT
+  erreichbar ist. Start schließt das Handy.
+  - Seite Charakter: Level und Erfahrung; die Fächer nennen Speise, Beschreibung und Wirkung. A isst die Speise.
+  - Seite Karte: Gebiete mit "Du bist hier", Missionszielen und besuchten Räumen; Aufgaben mit Ort,
+    A öffnet die Einzelheiten. A auf einem Gebiet öffnet die Gebietskarte (LT/RT wechseln, B zurück).
+  - Seite Bewegungen: Name, Art und die komplette Tastenfolge jeder Technik.
+  - Seite Rekruten: Name und Beschreibung.
+- Neue Kartenmarkierungen werden angesagt. Kartenmarkierungen sind jetzt sofort nach dem Raumwechsel bekannt.
+- Zwischensequenz-Räume heißen wie der eigentliche Raum. Doppelte Ankunftsansage zusätzlich abgefangen.
+
+Neu in Version 0.1.7
+- Verschlossene Türen: Bei der Ankunft sagt der Mod jetzt klar "Diese Tür ist verschlossen. Das Spiel öffnet sie erst
+  später, nimm einen anderen Ausgang." (zum Beispiel die Umkleide am Schwimmbad). Keine doppelte Ankunftsansage mehr.
+- Gegnerwellen: Viele Räume schicken etwa 20 Sekunden nach dem letzten besiegten Gegner eine neue Welle.
+  Der Mod sagt das jetzt an, wenn alle Gegner eines Raums besiegt sind.
+- Türziel korrigiert: Der Mod peilt nur noch den echten Türbereich an, nicht mehr die Stelle, an der Spieler beim
+  Betreten erscheinen (das führte im Schwimmbad am Ausgang zum Basketballplatz vorbei).
+- Wegfinder: Steht die Figur dicht an einer Kante oder einem Sprungbrett, sucht er notfalls mit schmalerem Körper.
+
+Neu in Version 0.1.6
+- Rekrutieren: Bettelt ein Gegner, wird er sofort zum Navigator-Ziel. Rechten Stick kurz drücken läuft direkt
+  in ihn hinein, damit du ihn greifst. Sobald du ihn hältst: Griff-Ton und "Gegriffen. Jetzt LT drücken zum Rekrutieren!".
+  Klappt es, hörst du einen aufsteigenden Vierklang und "Rekrutiert!". Klappt es nicht, sagt der Mod warum
+  (Gegner bettelt nicht mehr, oder deine Hilfe ist gerade im Einsatz).
+- Einsammeln: Essen kann das Spiel nur aufheben lassen, wenn deine Gesundheit nicht voll ist. Mit "unverwundbar"
+  ist sie immer voll; deshalb ließ sich das Spicy Chili nicht einsammeln. Essen wird bei voller Gesundheit nicht
+  mehr als Ziel angeboten, und der Mod sagt es dir an. Gegenstände, die man nur berühren muss, heißen jetzt
+  "Einfach darüber laufen" statt "X drücken". Das Hinführen zu Gegenständen hält genauer an.
+- Neuer Wegfinder für das Hinführen: Er kennt Säulen, Tische, Kisten und Wände und läuft um sie herum
+  (vorher blieb er zum Beispiel im 2. Etage Flur B an einer Säule hängen).
+- Sackgassen-Hinweis nennt jetzt auch den Weg, zum Beispiel "Weg: 1 Meter nach unten, dann links 4 Meter".
+- "Angekommen" kommt nicht mehr doppelt. Türansagen beim Vorbeilaufen höchstens alle 15 Sekunden.
+
+Neu in Version 0.1.5
+- Schutz vor Schaden (Mod-Menü, ganz oben bei den Funktionen): aus, halber Schaden oder unverwundbar.
+  Treffer hörst du weiterhin; bei "unverwundbar" klingt der Treffer weicher. Das Mod-Menü öffnet sich einmal,
+  damit du die neue Einstellung wählen kannst.
+- Kartenmarkierungen als Ziele: Mit dem rechten Stick hoch/runter (oder Umschalt+F8) stehen die markierten Räume
+  jetzt ganz oben in der Zielliste, zum Beispiel "Weg zur Kartenmarkierung Schuldach, zuerst Tür nach 2. Etage Flur A".
+  Rechten Stick kurz drücken führt dich zum passenden Ausgang. Kennt der Mod den Weg noch nicht, schlägt er einen
+  noch nicht besuchten Ausgang zum Erkunden vor.
+
+Neu in Version 0.1.4
+- Keine Ortungstöne mehr während Videosequenzen, Tutorials, Szenenübergängen und Spielszenen, in denen das Spiel
+  die Steuerung übernimmt.
+- "Angekommen" beim Peilton nur noch einmal pro Ziel und nie mitten im Kampf (dann nur der Ton).
+- Verschlossene Türen (zum Beispiel die Schultoilette am Anfang) heißen "verschlossen" und stehen am Ende der Zielliste.
+  Der Mod merkt sie sich in RCGAccess\verschlossen.txt und vergisst sie wieder, sobald du durch die Tür gehst.
+- Waffenhinweise kürzer ("Kette, X") und pro Waffe höchstens alle 20 Sekunden.
+- Spiel vorbei: Fortsetzen und Beenden werden als Auswahl mit Position angesagt.
+- Copyright-Texte im Titel werden nicht mehr vorgelesen.
+- Richtung Quest über die Markierungen der Handy-Karte: Kennt der Mod den Weg zu einem markierten Raum,
+  heißt der passende Ausgang "Richtung Quest". Umschalt+F3 nennt die markierten Räume.
+- Bettelnde Gegner: zwei bittende Töne von ihrer Seite und die Ansage, wie man sie rekrutiert.
+- Bewaffnete Gegner: Ansage "Schülerin hat Kette, links"; ihr Klopfen klingt heller.
+
+Neu in Version 0.1.3
+- Hinführen jetzt mit dem RECHTEN Stick (kurz drücken). Den linken Stick drücken benutzt das Spiel selbst (Verhöhnung).
+  Peilton an/aus: rechten Stick gedrückt halten.
+- Türen schweigen, solange ein Kampfbereich gesperrt ist.
+- Neuer Ton: Verlässt du den Bereich einer Tür (oder eines anderen Objekts), hörst du einen kurzen fallenden Ton.
+  So weißt du genau, ob du noch an der Tür stehst. Zum Öffnen an der Tür stehen bleiben und X halten.
+- Das Hinführen zu einer Tür läuft bis in die Mitte des Türbereichs und meldet dann "Angekommen".
+
+Neu in Version 0.1.2
+- Türen: Der Mod peilt jetzt den Bereich vor der Tür an, in dem man stehen muss (den Interaktionsbereich des Spiels),
+  statt eines geschätzten Punkts. Das gilt für Peilton, Richtungsangaben, Sackgassen-Hinweis und Hinführen.
+- Beim Hinführen zu einer Tür kommt "Angekommen" genau dann, wenn das Spiel die Tür benutzbar macht; danach X halten.
+- Der Mod schreibt beim Betreten jedes Raums und bei blockiertem Hinführen ein Raumprotokoll
+  (Türen, Wände, Grenzen) in RCGAccess\Protokolle. Damit kann ich Ausgänge, die noch nicht gefunden werden, genau einordnen.
+
+Neu in Version 0.1.1
+- Gegner-Klopfen, Angriffswarnung und Siegton kommen deutlich von der Seite des Gegners.
+- Gegner besiegt: fallender Dreiklang von der Seite des Gegners. Im Kampfbereich bei den letzten drei Gegnern zusätzlich "Noch 2" usw.
+- Anzahl der Gegner auf Knopfdruck: Der Mod nimmt automatisch eine Controller-Taste, die das Spiel nicht benutzt
+  (einstellbar im Mod-Menü unter "Taste für Anzahl der Gegner"). Tastatur: Strg+F5.
+- Eingesammeltes wird angesagt (zum Beispiel Essen mit Heilung, Gegenstände), mit drei hellen Tönen.
+- Wichtige Gegenstände und Essen: Nach dem Kampf sagt der Mod, wo sie liegen, und macht sie zum Navigator-Ziel.
+  Rechten Stick drücken führt hin (seit 0.1.3).
+- Keine Ansagen mehr aus verdeckten Fenstern (geschlossenes Handy-Menü, versteckte Einblendungen).
+- Ansagen des Rektors und andere Erzähltexte werden vorgelesen.
+- Hinführen zu Türen: Der Mod läuft zum begehbaren Punkt vor der Tür und meldet die Ankunft.
+- Modusauswahl: Einträge nennen jetzt auch ihren Namen, zum Beispiel "Schwierigkeit, Normal".
+
+Neu in Version 0.1.0
+- Erste Version: gesprochene Menüs, Dialoge, Tutorials und Einblendungen, Gegner-Radar mit Klopfen,
+  Angriffswarnung, Gesundheitstöne, Navigator mit Peilton zu Ausgängen, Läden und Personen,
+  automatisches Hinführen, Hinweis bei Sackgassen, Raumansage, Gruben-Warnung, eigenes Mod-Menü (F11).
+
+
+INSTALLATION
+1. Den Inhalt der ZIP-Datei in den Spielordner entpacken, also in den Ordner, in dem RiverCityGirls.exe liegt
+   (bei Steam meist: C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
+   Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
+2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
+   das kann ein paar Sekunden länger dauern.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.1.8 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+   Erst mit "Speichern und schließen" geht es ins Spiel.
+
+Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und mindestens eine
+SAPI-Stimme in der Sprache des Spiels (für Deutsch zum Beispiel Microsoft Hedda Desktop).
+Der Mod spricht immer die Sprache des Spiels: Stellst du im Spiel eine andere Sprache ein, wechselt
+der Mod mit, samt passender Stimme. Für Sprachen ohne eigene Mod-Texte nimmt der Mod englische Texte.
+
+
+DAS MOD-MENÜ (F11)
+Solange das Menü offen ist, steht das Spiel still.
+- Eintrag wählen: Pfeil hoch/runter, Steuerkreuz oder linker Stick hoch/runter
+- Wert ändern: Pfeil links/rechts, Steuerkreuz links/rechts
+- Umschalten oder auslösen: Eingabe, Leertaste oder A
+- Eintrag erklären: F1 oder Y
+- Verwerfen und schließen: Rücktaste oder B
+- Speichern und schließen: F11 oder Start
+- Strg allein stoppt die Sprache, auch im Menü.
+
+Einträge: Sprache des Mods, deutsche und englische Stimme, Sprechtempo, Lautstärke der Sprache,
+Menüs vorlesen, Dialoge, Sprüche von Gegnern und Passanten, Tutorials und Einblendungen, Interaktionshinweise,
+Gegner-Radar, Lautstärke Gegner-Klopfen (0 bis 200 %), Reichweite des Radars, Gegner ansagen, Angriffswarnung,
+Gesundheitstöne, Boss-Energie, Raumansage, Sackgassen-Hinweis, Gruben-Warnung, Geld-Töne, Geldbetrag ansagen,
+Lautstärke der Orientierungstöne, Mod-Funktionen am Controller, Hinführen bei Gegnern anhalten,
+Spiel leiser bei Sprache, Spiel leiser bei Tönen, Lautstärke beim Leiserwerden, ausführliches Protokoll,
+Mod-Menü bei jedem Start, Donation, Accessibility Mods by Grybyx, Speichern, Verwerfen.
+
+
+TASTEN IM SPIEL
+Tastatur:
+- Strg allein oder F10: Sprache stoppen
+- F9: letzte Ansage wiederholen
+- F7 / Umschalt+F7: schneller / langsamer sprechen
+- F2: alle sichtbaren Texte vorlesen (von oben nach unten)
+- F3: aktuelle Menüauswahl wiederholen
+- F4: Tastenhinweise auf dem Bildschirm vorlesen
+- Umschalt+F3: aktive Quests mit Ort
+- F5: Status (Gesundheit, Stufe, Geld, Gegner, Kampfbereich)
+- Umschalt+F5: Raum mit allen Ausgängen und Zielen, jeweils mit Richtung
+- Strg+F5: Anzahl der Gegner, dann die sichtbaren Gegner mit Richtung und Energie
+- F6: Richtung zum Navigator-Ziel
+- Umschalt+F6: Tontest
+- F8: Peilton (Navigator) an/aus
+- Umschalt+F8 / Strg+Umschalt+F8: nächstes / vorheriges Ziel
+- Strg+F8: Hinführen zum Ziel an/aus
+- F11: Mod-Menü
+- Strg+F12: Szenen-Protokoll (für die Fehlersuche)
+
+Controller (abschaltbar im Mod-Menü, nur während man spielt):
+- Rechten Stick kurz drücken: Hinführen zum Ziel an/aus
+- Rechten Stick halten: Peilton an/aus
+- Rechter Stick hoch / runter: vorheriges / nächstes Ziel
+- Rechter Stick links: Raum mit allen Ausgängen
+- Rechter Stick rechts: Status
+- Taste für Anzahl der Gegner: automatisch eine vom Spiel nicht benutzte Taste (LB, RB, LT, RT oder Ansicht);
+  welche, sagt der Mod-Menü-Eintrag "Taste für Anzahl der Gegner" (F1 oder Y erklärt auch die Belegung des Spiels).
+PlayStation-Namen: LB/RB = L1/R1, LT/RT = L2/R2, Stick drücken = L3/R3.
+Falls das Spiel eine Stick-Taste selbst benutzt, "Mod-Funktionen am Controller" im Mod-Menü ausschalten.
+
+
+WEGFINDUNG: WENN ES OBEN ODER UNTEN WEITERGEHT
+In River City Girls geht es oft nicht nur nach links oder rechts weiter, sondern durch einen Ausgang oben
+(weiter hinten im Bild) oder unten (vorne im Bild), oder durch eine Tür.
+- Beim Betreten eines Raums sagt der Mod den Raumnamen und die Zahl der Ausgänge,
+  zum Beispiel "Downtown. 3 Ausgänge, davon 1 noch nicht besucht".
+- Läufst du gegen eine Grenze, hörst du ein Rauschen von dieser Seite. Danach sagt der Mod zum Beispiel:
+  "Hier geht es nicht weiter nach rechts. Nächster Ausgang: Ausgang oben nach Shopping-Center, links 4 Meter, 3 Meter nach oben.
+  Rechten Stick drücken führt dich hin."
+- Rechten Stick kurz drücken (oder Strg+F8) führt dich automatisch zum gewählten Ziel. Der Peilton läuft dabei mit.
+  Bewegst du den linken Stick selbst, übernimmst du wieder. Kommt ein Gegner näher als 4 Meter, hält das Hinführen an.
+  An einem Randausgang läuft der Mod durch den Ausgang hindurch; an einer Tür sagt er "X halten".
+- Mit dem rechten Stick hoch/runter wählst du ein anderes Ziel: Ausgänge (zuerst die Richtung Quest,
+  dann noch nicht besuchte), Läden, Personen, Automaten, Kletterstellen.
+- Richtung Quest: Der Mod merkt sich jeden Raum und seine Ausgänge (Datei RCGAccess\raumkarte.txt).
+  Sobald er den Weg zum Ort der aktiven Quest kennt, heißt der passende Ausgang "Richtung Quest" und steht ganz oben.
+  Am Anfang kennt der Mod noch wenige Räume, die Karte wächst beim Spielen.
+
+
+TÖNE
+- Peilton (Navigator): kurzer Ton aus der Richtung des Ziels. Stereo = Seite, höher = Ziel liegt weiter oben (hinten),
+  tiefer = weiter unten (vorne), schneller = näher. Dreieck-Klang bei Ausgängen, heller Rechteck-Klang beim Ausgang
+  Richtung Quest, weicher Sinus bei Läden und Personen.
+- Gegner-Klopfen: weiches "Tock" des nächsten Gegners. Stereo = Seite, höher = Gegner weiter oben,
+  tiefer = weiter unten, schneller = näher, leiser = Gegner hat weniger Energie. Bosse klopfen tiefer.
+- Angriffswarnung: zwei kurze, helle, harte Töne von der Seite eines nahen Gegners, der gerade angreift.
+- Gegner besiegt: fallender Dreiklang von seiner Seite.
+- Kampfbereich gesperrt: zwei tiefe harte Töne. Bereich frei: steigender Zweiklang.
+- Schaden: tiefes, quietschendes Rechteck. Heilung: steigender Ton. Unter 30 % Gesundheit: tiefer Doppelpuls alle 2,5 Sekunden.
+- Wand oder Grenze: Rauschen von der Seite (tief bei unten, etwas höher bei oben).
+- Abgrund in der Nähe: fallender Ton von der Seite.
+- Interaktion möglich: kurzer steigender Ton, danach die Ansage (zum Beispiel "Tür nach Downtown. X halten.").
+- Bereich einer Tür oder eines Objekts verlassen: kurzer fallender Ton.
+- Geld aufgesammelt: zwei helle Töne.
+- Gegenstand oder Essen eingesammelt: drei helle Töne, danach die Ansage.
+- Gegenstand erschienen: kurzer steigender Ton von seiner Seite, danach die Ansage.
+- Ziel erreicht: steigender Gleitton.
+Umschalt+F6 spielt die Töne zum Kennenlernen vor.
+
+
+DATEN FÜR DIE FEHLERSUCHE
+Nach dem Spielen RCGAccess_Daten_sammeln.bat im Spielordner starten. Sie legt eine ZIP-Datei mit Datum und Uhrzeit
+im Namen auf den Desktop (Protokolle, Einstellungen, Raumkarte). Diese ZIP bitte schicken, am besten mit einem Satz,
+was auffällig war und ungefähr wann (zum Beispiel "17:35 Menü nicht vorgelesen").
+
+
+DEINSTALLATION
+winhttp.dll, doorstop_config.ini, .doorstop_version, changelog.txt sowie die Ordner BepInEx und RCGAccess
+aus dem Spielordner löschen.
+
+
+LINKS
+- Donation: https://buymeacoffee.com/blindretrogamer/
+- Accessibility Mods by Grybyx: https://github.com/grybyx/
