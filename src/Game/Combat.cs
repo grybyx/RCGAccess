@@ -30,6 +30,7 @@ namespace RCGAccess
         private static ScreenLock.State _lockState = ScreenLock.State.Waiting;
         public static int VisibleEnemies { get { return _visibleCount; } }
         public static float NearestEnemyDist = 999f;
+        public static float NearestHostileDist = 999f; // like NearestEnemyDist, but without begging enemies
         public static EnemyEnitity Nearest;
 
         public static void OnSceneLoaded(string scene)
@@ -45,6 +46,7 @@ namespace RCGAccess
             _lockState = ScreenLock.State.Waiting;
             Nearest = null;
             NearestEnemyDist = 999f;
+            NearestHostileDist = 999f;
         }
 
         public static void Update()
@@ -198,7 +200,7 @@ namespace RCGAccess
             float now = Time.realtimeSinceStartup;
             List<EnemyEnitity> list = Enemies();
             EnemyEnitity nearest = null;
-            float best = 9999f;
+            float best = 9999f, bestHostile = 9999f;
             int visible = 0;
             HashSet<int> alive = new HashSet<int>();
             List<EnemyEnitity> newOnes = new List<EnemyEnitity>();
@@ -215,6 +217,7 @@ namespace RCGAccess
                 visible++;
                 if (!_known.Contains(id)) { _known.Add(id); newOnes.Add(e); }
                 if (d < best) { best = d; nearest = e; }
+                if (d < bestHostile && !IsBegging(e)) bestHostile = d;
                 CheckAttack(e, pp, ep, d, now);
                 CheckBeggingAndWeapon(e, pp, ep, now);
                 CheckBoss(e);
@@ -239,6 +242,7 @@ namespace RCGAccess
 
             Nearest = nearest;
             NearestEnemyDist = best;
+            NearestHostileDist = bestHostile;
             // the room sends a new wave about 20 seconds after the last enemy (EnemySpawnController)
             if (list.Count == 0 && _hadEnemies && !ScreenLockRunning && Settings.EnemyAnnounce && now - _waveSaidAt > 30f)
             {
@@ -541,7 +545,7 @@ namespace RCGAccess
 
         public static bool InFight
         {
-            get { return NearestEnemyDist < 7f || Time.realtimeSinceStartup - _lastAttack < 3f; }
+            get { return NearestHostileDist < 7f || Time.realtimeSinceStartup - _lastAttack < 3f; }
         }
 
         public static bool ScreenLockRunning

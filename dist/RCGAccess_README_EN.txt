@@ -1,5 +1,9 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.2.0
+Version 0.2.1
+
+New in version 0.2.1
+- Begging enemies no longer count as "enemy nearby": they no longer block guiding, the beacon or fight detection.
+- Shops: "Your money" is now reliably announced when entering a shop.
 
 New in version 0.2.0
 - Game settings: switches say their name and the chosen value ("Subtitles: On"), as do text speed and volumes in
@@ -85,7 +89,7 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.2.0 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.2.1 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
 Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and at least one SAPI voice

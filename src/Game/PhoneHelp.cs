@@ -353,22 +353,19 @@ namespace RCGAccess
         }
 
         // ---------------- shop ----------------
-        private static UI_StoreScreenV2 _store;
-        private static float _storeScanAt;
+        private static bool _storeOpen;
+        private static float _storeOpenAt = -1f;
         private static float _storeMoney = -1f;
+
+        public static void OnStoreOpened() { _storeOpen = true; _storeOpenAt = Time.realtimeSinceStartup; _storeMoney = -1f; Log.Write("Laden geoeffnet"); }
+        public static void OnStoreLeft() { _storeOpen = false; _storeMoney = -1f; Log.Write("Laden verlassen"); }
 
         /// <summary>Says the money when a shop opens and what is left after buying.</summary>
         private static void UpdateStore(float now)
         {
-            if (now >= _storeScanAt)
-            {
-                _storeScanAt = now + 0.3f;
-                _store = null;
-                foreach (UI_StoreScreenV2 st in UnityEngine.Object.FindObjectsOfType<UI_StoreScreenV2>())
-                    if (st != null && st.isActiveAndEnabled) { _store = st; break; }
-            }
-            TMP_Text mt = _store != null ? UiReader.Traverse(_store, "_playerMoneyText") as TMP_Text : null;
-            if (_store == null || mt == null || !mt.isActiveAndEnabled || !GameInfo.OnScreen(mt.rectTransform)) { _storeMoney = -1f; return; }
+            if (!_storeOpen) return;
+            if (UI_StoreScreenV2.Instance == null || GameState.CurrentState == GameStates.Playing && now - _storeOpenAt > 2f) { _storeOpen = false; return; }
+            if (now - _storeOpenAt < 0.5f) return;
             RCG.Player p = GameInfo.Player;
             if (p == null) return;
             float m = Combat.Money(p);

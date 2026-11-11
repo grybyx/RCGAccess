@@ -577,7 +577,7 @@ namespace RCGAccess
                     if (dist > 2f) _arrivedSaid = false;
                     if (dist > 4f && _arrivedObj == t.Obj) _arrivedObj = null;
                     // the beacon pauses while an enemy is close (the enemy knock has priority), unless guiding to a beggar
-                    bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestEnemyDist < 4.5f && t.Kind != Kind.Beggar;
+                    bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar;
                     if (now >= _nextBeep && !enemyClose)
                     {
                         _nextBeep = now + Mathf.Lerp(0.2f, 1.2f, Mathf.Clamp01(dist / 30f));
@@ -720,7 +720,7 @@ namespace RCGAccess
             Target t = Current;
             RCG.Player p = GameInfo.Player;
             if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
-            if (Settings.AutoWalkStopForEnemies && Combat.NearestEnemyDist < 4.5f && t.Kind != Kind.Beggar) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
+            if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
             _walkTarget = t;
             AutoWalk = true;
             _walkStart = Time.realtimeSinceStartup;
@@ -827,7 +827,7 @@ namespace RCGAccess
                 if (p.Puppet != null && p.Puppet.IsMaster) { Arrive(t, null); return false; } // grabbed: the grab message follows
                 if (be == null || !Combat.IsBegging(be)) { StopWalk(Loc.T("beg_over")); return false; }
             }
-            else if (Settings.AutoWalkStopForEnemies && Combat.NearestEnemyDist < 4.5f) { StopWalk(Loc.T("walk_enemy")); return false; }
+            else if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f) { StopWalk(Loc.T("walk_enemy")); return false; }
             Vector3 pos = p.transform.position;
             Vector3 goal = t.Pos;
 

@@ -41,6 +41,8 @@ namespace RCGAccess
             Post(h, typeof(UI_ScreenManager), "DisableOtherScreens", "ScreenPost");
             Post(h, typeof(ScreenLock), "ReportEnemyDeath", "EnemyDeathPost");
             Post(h, typeof(UI_ItemPickup), "SetWhatYouGotText", "RewardPost");
+            Post(h, typeof(UI_StoreScreenV2), "OnGotoStore", "StoreOpenPost");
+            Post(h, typeof(UI_StoreScreenV2), "OnLeaveStore", "StoreLeavePost");
             Post(h, typeof(UI_PhoneScreen_ExtendedMap), "ShowMapIndicators", "MapIndicatorsPost");
             Post(h, typeof(PlayerRecruit), "RecruitLastGrabbed", "RecruitPost");
             try
@@ -181,6 +183,9 @@ namespace RCGAccess
         {
             PhoneHelp.OnReward(__instance, __0);
         }
+
+        public static void StoreOpenPost() { PhoneHelp.OnStoreOpened(); }
+        public static void StoreLeavePost() { PhoneHelp.OnStoreLeft(); }
 
         public static void MapIndicatorsPost()
         {
