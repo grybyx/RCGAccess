@@ -1,5 +1,14 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.1.9
+Version 0.2.0
+
+Neu in Version 0.2.0
+- Einstellungen des Spiels: Schalter sagen Name und gewählten Wert ("Untertitel: An"), ebenso Textgeschwindigkeit
+  und Lautstärken in Prozent. Beim Umschalten wird der neue Wert angesagt.
+- Läden: Beim Öffnen "Dein Geld: … Dollar", nach jedem Kauf "Noch … Dollar". Zu teure Waren sagen "zu teuer".
+- Hinführen ist schneller: Auf langen geraden Strecken rennt die Figur (Mod-Menü "Beim Hinführen rennen").
+- Türen: Das Hinführen geht das letzte Stück direkt in den Türbereich und hält danach X für dich, du gehst sofort
+  in den nächsten Raum (Mod-Menü "Türen nach dem Hinführen öffnen"). Linken Stick bewegen bricht ab.
+- Das Mod-Menü öffnet sich wegen der neuen Einträge beim nächsten Start einmal von selbst.
 
 Neu in Version 0.1.9
 - Peilton: Schaltet das Hinführen den Peilton ein, geht er mit dem Ende des Hinführens wieder aus. Er bleibt nur an,
@@ -107,7 +116,7 @@ INSTALLATION
    Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
 2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
    das kann ein paar Sekunden länger dauern.
-3. Beim ersten Start sagt der Mod "RCGAccess 0.1.9 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.2.0 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
    Erst mit "Speichern und schließen" geht es ins Spiel.
 
 Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und mindestens eine

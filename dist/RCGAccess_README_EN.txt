@@ -1,5 +1,14 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.1.9
+Version 0.2.0
+
+New in version 0.2.0
+- Game settings: switches say their name and the chosen value ("Subtitles: On"), as do text speed and volumes in
+  percent. Changing a value announces the new one.
+- Shops: on opening "Your money: … dollars", after each purchase "… dollars left". Items you cannot afford say "too expensive".
+- Guiding is faster: on long straight stretches the character runs (mod menu "Run while guiding").
+- Doors: guiding walks the last bit straight into the door area and then holds X for you, so you go right into the
+  next room (mod menu "Open doors after guiding"). Moving the left stick cancels it.
+- Because of the new entries, the mod menu opens once by itself on the next start.
 
 New in version 0.1.9
 - Beacon: if guiding switched the beacon on, it goes off again when guiding ends. It only stays on if you switched it on
@@ -76,7 +85,7 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.1.9 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.2.0 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
 Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and at least one SAPI voice

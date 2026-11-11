@@ -788,9 +788,27 @@ namespace RCGAccess
             Speech.Say(text, true);
         }
 
+        public static bool WalkRun;
+        private static InteractEntity _autoEnterDoor;
+        private static float _autoEnterUntil;
+
+        /// <summary>After guiding to an open door: hold the interact button until the game takes the player through.</summary>
+        public static bool AutoEnter(int rawH, int rawV)
+        {
+            if (_autoEnterDoor == null) return false;
+            float now = Time.realtimeSinceStartup;
+            if (now > _autoEnterUntil || rawH != 0 || rawV != 0 || !_autoEnterDoor.gameObject.activeInHierarchy || !InRange(_autoEnterDoor))
+            {
+                _autoEnterDoor = null;
+                return false;
+            }
+            return true;
+        }
+
         public static bool WalkInput(RCG.Player p, int rawH, int rawV, out int h, out int v)
         {
             h = 0; v = 0;
+            WalkRun = false;
             if (!AutoWalk) return false;
             float now = Time.realtimeSinceStartup;
             Target t = _walkTarget;
@@ -826,6 +844,15 @@ namespace RCGAccess
             {
                 bool locked = Combat.ScreenLockRunning || !_walkTarget_DoorCanEnter(t) || t.Locked;
                 _interactSaid[t.Door.GetInstanceID()] = now;
+                if (!locked && Settings.AutoDoor)
+                {
+                    InteractEntity door = t.Door;
+                    Arrive(t, Loc.T("door_auto", t.Name));
+                    _autoEnterDoor = door;
+                    _autoEnterUntil = now + 1.8f;
+                    Log.Write("Tuer automatisch: " + door.name);
+                    return false;
+                }
                 Arrive(t, Loc.T("arrived", t.Label()) + (t.Locked ? ArrivalHint(t) : locked ? " " + Loc.T("door_locked") : ArrivalHint(t) + " " + Loc.T("door_stay")));
                 return false;
             }
@@ -869,8 +896,14 @@ namespace RCGAccess
                 dx = w.x - pos.x; dz = w.z - pos.z;
             }
             if (beggar && _pathIdx >= _path.Count - 1) { dx = gdx; dz = gdz; } // walk right into the begging enemy to grab it
+            // doors: the path grid keeps a safety margin to walls; for the last bit walk straight into the door area
+            bool doorFinal = t.Kind == Kind.Exit && !t.IsEdge && t.Door != null && _pathIdx >= _path.Count - 1 && Mathf.Abs(gdx) < 1.5f && Mathf.Abs(gdz) < 2f;
+            if (doorFinal) { dx = gdx; dz = gdz; }
             h = Mathf.Abs(dx) > 0.12f ? (dx > 0 ? 1 : -1) : 0;
             v = Mathf.Abs(dz) > 0.08f ? (dz > 0 ? 1 : -1) : 0;
+            // run on long horizontal stretches (the game only runs sideways)
+            float gdist = Mathf.Sqrt(gdx * gdx + gdz * gdz);
+            WalkRun = Settings.WalkRun && h != 0 && Mathf.Abs(dx) > 1.6f && gdist > 3f && !beggar && t.Kind != Kind.Item;
 
             // stuck handling
             if (Vector3.Distance(pos, _stuckPos) > 0.25f) { _stuckPos = pos; _stuckSince = now; }

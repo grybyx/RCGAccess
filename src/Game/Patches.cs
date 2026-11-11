@@ -72,6 +72,16 @@ namespace RCGAccess
             {
                 if (!__0) return;
                 string s = UiReader.ReadFields(__instance, "_itemName", "_itemPrice", "_itemDescription");
+                try
+                {
+                    RCG.Player pl = GameInfo.Player;
+                    if (__instance.Item != null && pl != null)
+                    {
+                        float money = Combat.Money(pl);
+                        if (money >= 0 && __instance.Item.ItemPrice > money + 0.001f) s += ", " + Loc.T("shop_expensive");
+                    }
+                }
+                catch { }
                 UiReader.OnSpecificFocus(__instance, s);
             }
             catch (Exception e) { Log.Error("StoreHoverPost", e); }
@@ -204,6 +214,7 @@ namespace RCGAccess
 
         private static MethodInfo _setH = AccessTools.PropertySetter(typeof(CombatInput), "HorizontalDir");
         private static MethodInfo _setV = AccessTools.PropertySetter(typeof(CombatInput), "VerticalDir");
+        private static MethodInfo _setRun = AccessTools.PropertySetter(typeof(CombatInput), "Run");
         private static readonly object[] _arg = new object[1];
         private static PlayerInput _cachedInput;
         private static RCG.Player _cachedPlayer;
@@ -226,10 +237,12 @@ namespace RCGAccess
                 int rawH = __instance.HorizontalDir, rawV = __instance.VerticalDir;
                 if (__instance.Quick || __instance.Heavy || __instance.Special) Combat.NotePlayerAttack();
                 int h, v;
+                if (Navigator.AutoEnter(rawH, rawV)) __instance.InteractQuick = true;
                 if (Navigator.WalkInput(p, rawH, rawV, out h, out v))
                 {
                     _arg[0] = h; _setH.Invoke(__instance, _arg);
                     _arg[0] = v; _setV.Invoke(__instance, _arg);
+                    if (Navigator.WalkRun && _setRun != null) { _arg[0] = true; _setRun.Invoke(__instance, _arg); }
                 }
                 else Navigator.CheckDeadEnd(p, rawH, rawV);
             }

@@ -105,6 +105,17 @@ namespace RCGAccess
             A("m_tonevol_help", "Lautstärke aller Töne außer dem Gegner-Klopfen. Jede Änderung spielt den Peilton vor.", "Volume of all tones except the enemy knock. Each change plays the beacon.");
             A("m_padkeys", "Mod-Funktionen am Controller", "Mod functions on the controller");
             A("m_padkeys_help", "Rechten Stick kurz drücken: Hinführen zum Ziel. Rechten Stick halten: Peilton an oder aus. Rechter Stick hoch und runter: Ziel wechseln. Rechter Stick links: Raum und Ausgänge. Rechter Stick rechts: Status. Den linken Stick drücken benutzt das Spiel für die Verhöhnung.", "Press right stick briefly: guide me to the target. Hold right stick: beacon on or off. Right stick up and down: change target. Right stick left: room and exits. Right stick right: status. The game uses the left stick press for taunting.");
+            A("m_walkrun", "Beim Hinführen rennen", "Run while guiding");
+            A("m_walkrun_help", "Auf langen geraden Strecken rennt die Figur beim Hinführen, das spart Zeit. Kurz vor dem Ziel geht sie wieder.", "On long straight stretches the character runs while guiding, which saves time. Close to the goal it walks again.");
+            A("m_autodoor", "Türen nach dem Hinführen öffnen", "Open doors after guiding");
+            A("m_autodoor_help", "Führt dich das Hinführen zu einer offenen Tür, hält der Mod X für dich und du gehst direkt in den nächsten Raum. Bewegst du den linken Stick, bricht das ab.", "When guiding brings you to an open door, the mod holds X for you and you walk straight into the next room. Moving the left stick cancels it.");
+            A("door_auto", "{0}, gehe hindurch.", "{0}, going through.");
+            A("shop_money", "Dein Geld: {0} Dollar.", "Your money: {0} dollars.");
+            A("shop_left", "Noch {0} Dollar.", "{0} dollars left.");
+            A("shop_expensive", "zu teuer", "too expensive");
+            A("speed_1", "langsam", "slow");
+            A("speed_2", "mittel", "medium");
+            A("speed_3", "schnell", "fast");
             A("m_autowalkstop", "Hinführen bei Gegnern anhalten", "Stop guiding near enemies");
             A("m_autowalkstop_help", "Das automatische Hinführen hält an, sobald ein Gegner näher als 4 Meter kommt.", "Guided walking stops as soon as an enemy is closer than 4 meters.");
             A("m_duckspeech", "Spiel leiser bei Sprache", "Duck game during speech");

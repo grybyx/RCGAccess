@@ -10,7 +10,7 @@ namespace RCGAccess
     /// <summary>All switches and values of the mod (RCGAccess\RCGAccess.ini).</summary>
     public static class Settings
     {
-        public const int CurrentMenuVersion = 3;
+        public const int CurrentMenuVersion = 4;
 
         // Funktionen
         public static bool Menus = true;
@@ -34,6 +34,8 @@ namespace RCGAccess
         public static int EnemyCountButton = 0; // 0 automatisch, 1 LB, 2 RB, 3 LT, 4 RT, 5 Back, 6 aus
         public static bool PadKeys = true;
         public static bool AutoWalkStopForEnemies = true;
+        public static bool WalkRun = true;   // guided walking runs on long straight stretches
+        public static bool AutoDoor = true;  // guided walking opens the door it arrives at
         public static bool DuckSpeech = true;
         public static bool DuckTones = false;
 

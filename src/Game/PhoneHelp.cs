@@ -192,6 +192,8 @@ namespace RCGAccess
             try
             {
                 if (sel == null) return null;
+                string setting = SettingText(sel);
+                if (setting != null) return setting;
                 UI_PhoneScreen_MapV2 map = sel.GetComponentInParent<UI_PhoneScreen_MapV2>();
                 if (map != null)
                 {
@@ -296,6 +298,98 @@ namespace RCGAccess
             return r;
         }
 
+
+        // ---------------- game settings (phone and title screen) ----------------
+        /// <summary>On/off switches, text speed and volume sliders of the game's settings: name plus the chosen value.</summary>
+        private static string SettingText(Component sel)
+        {
+            UI_SettingsSelector ss = sel.GetComponent<UI_SettingsSelector>();
+            if (ss == null) ss = sel.GetComponentInChildren<UI_SettingsSelector>();
+            if (ss == null || ss is UI_SettingsLanguage) return null;
+            string value = null;
+            List<TMP_Text> skip = new List<TMP_Text>();
+            if (ss is UI_SettingsSubtitles || ss is UI_SettingsFriendlyFire || ss is UI_SettingsRumble)
+            {
+                TMP_Text on = UiReader.Traverse(ss, "_onText") as TMP_Text;
+                TMP_Text off = UiReader.Traverse(ss, "_offText") as TMP_Text;
+                if (on != null) skip.Add(on);
+                if (off != null) skip.Add(off);
+                bool v = ss is UI_SettingsSubtitles ? ((UI_SettingsSubtitles)ss).ShowSubtitles
+                       : ss is UI_SettingsFriendlyFire ? ((UI_SettingsFriendlyFire)ss).FriendlyFire
+                       : ((UI_SettingsRumble)ss).RumbleOn;
+                TMP_Text chosen = v ? on : off;
+                value = chosen != null ? GameInfo.Clean(chosen.text) : "";
+                if (value.Length == 0) value = Loc.T(v ? "on" : "off");
+            }
+            else if (ss is UI_SettingsTextSpeed)
+            {
+                value = Loc.T("speed_" + (int)((UI_SettingsTextSpeed)ss).TextSpeed);
+            }
+            else if (ss is UI_SettingsSlider)
+            {
+                UnityEngine.UI.Slider sl = UiReader.Traverse(ss, "_slider") as UnityEngine.UI.Slider;
+                if (sl == null) return null;
+                float range = sl.maxValue - sl.minValue;
+                int pct = range > 0 ? Mathf.RoundToInt((sl.value - sl.minValue) / range * 100f) : 0;
+                value = pct + " %";
+            }
+            else return null;
+            // name of the setting: the highlighted label, else the other texts of the entry
+            string label = "";
+            TMP_Text lt = UiReader.Traverse(ss, "_selectedText") as TMP_Text;
+            if (lt != null && !skip.Contains(lt)) label = GameInfo.Clean(lt.text);
+            if (label.Length == 0)
+            {
+                List<string> parts = new List<string>();
+                foreach (TMP_Text t in sel.GetComponentsInChildren<TMP_Text>(false))
+                {
+                    if (skip.Contains(t) || !t.isActiveAndEnabled) continue;
+                    string c = GameInfo.Clean(t.text);
+                    if (c.Length > 0 && !parts.Contains(c)) parts.Add(c);
+                }
+                label = string.Join(", ", parts.ToArray());
+            }
+            return label.Length > 0 ? label + ": " + value : value;
+        }
+
+        // ---------------- shop ----------------
+        private static UI_StoreScreenV2 _store;
+        private static float _storeScanAt;
+        private static float _storeMoney = -1f;
+
+        /// <summary>Says the money when a shop opens and what is left after buying.</summary>
+        private static void UpdateStore(float now)
+        {
+            if (now >= _storeScanAt)
+            {
+                _storeScanAt = now + 0.3f;
+                _store = null;
+                foreach (UI_StoreScreenV2 st in UnityEngine.Object.FindObjectsOfType<UI_StoreScreenV2>())
+                    if (st != null && st.isActiveAndEnabled) { _store = st; break; }
+            }
+            TMP_Text mt = _store != null ? UiReader.Traverse(_store, "_playerMoneyText") as TMP_Text : null;
+            if (_store == null || mt == null || !mt.isActiveAndEnabled || !GameInfo.OnScreen(mt.rectTransform)) { _storeMoney = -1f; return; }
+            RCG.Player p = GameInfo.Player;
+            if (p == null) return;
+            float m = Combat.Money(p);
+            if (m < 0) return;
+            if (_storeMoney < 0)
+            {
+                _storeMoney = m;
+                string s = Loc.T("shop_money", Combat.FormatMoney(m));
+                Log.Text("Laden", s);
+                Speech.Say(s, false);
+            }
+            else if (m < _storeMoney - 0.001f)
+            {
+                _storeMoney = m;
+                string s = Loc.T("shop_left", Combat.FormatMoney(m));
+                Log.Text("Laden", s);
+                Speech.Say(s, false);
+            }
+            else if (m > _storeMoney) _storeMoney = m;
+        }
+
         // ---------------- phone pages ----------------
         private static UI_PhoneDisplayManager Display()
         {
@@ -322,6 +416,7 @@ namespace RCGAccess
         {
             try
             {
+                UpdateStore(Time.realtimeSinceStartup);
                 bool open = UI_PhoneManager.instance != null && UI_PhoneManager.instance.Open;
                 if (!open)
                 {

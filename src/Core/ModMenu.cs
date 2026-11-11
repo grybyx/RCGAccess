@@ -167,6 +167,8 @@ namespace RCGAccess
             });
             AddToggle("m_padkeys", () => Settings.PadKeys, v => Settings.PadKeys = v);
             AddToggle("m_autowalkstop", () => Settings.AutoWalkStopForEnemies, v => Settings.AutoWalkStopForEnemies = v);
+            AddToggle("m_walkrun", () => Settings.WalkRun, v => Settings.WalkRun = v);
+            AddToggle("m_autodoor", () => Settings.AutoDoor, v => Settings.AutoDoor = v);
             AddToggle("m_duckspeech", () => Settings.DuckSpeech, v => Settings.DuckSpeech = v);
             AddToggle("m_ducktones", () => Settings.DuckTones, v => Settings.DuckTones = v);
             _entries.Add(new Number
