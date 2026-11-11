@@ -16,6 +16,7 @@ namespace RCGAccess
         private abstract class Entry
         {
             public string Key;
+            public Action Sample; // example of the sound this entry is about, played after the entry is read
             public abstract string Value();
             public virtual void Change(int dir) { }
             public virtual void Activate() { Change(1); }
@@ -120,14 +121,16 @@ namespace RCGAccess
             AddToggle("m_dialogs", () => Settings.Dialogs, v => Settings.Dialogs = v);
             AddToggle("m_chatter", () => Settings.Chatter, v => Settings.Chatter = v);
             AddToggle("m_hints", () => Settings.Hints, v => Settings.Hints = v);
-            AddToggle("m_interact", () => Settings.Interact, v => Settings.Interact = v);
-            AddToggle("m_radar", () => Settings.Radar, v => Settings.Radar = v);
+            AddToggle("m_interact", () => Settings.Interact, v => Settings.Interact = v, delegate { Samples.Interact(0); });
+            AddToggle("m_radar", () => Settings.Radar, v => Settings.Radar = v, delegate { Samples.Knock(0); });
+            AddToggle("m_linetone", () => Settings.LineTone, v => Settings.LineTone = v, delegate { Samples.Line(0); });
             _entries.Add(new Number
             {
                 Key = "m_knockvol", Min = 0, Max = 200, Step = 10, Unit = "%",
                 Get = delegate { return Settings.KnockVolume; },
                 Set = delegate (int v) { Settings.KnockVolume = v; },
-                Preview = delegate { Combat.PreviewKnock(); }
+                Preview = delegate { Combat.PreviewKnock(); },
+                Sample = delegate { Combat.PreviewKnock(); }
             });
             _entries.Add(new Number
             {
@@ -135,15 +138,15 @@ namespace RCGAccess
                 Get = delegate { return Settings.RadarRange; },
                 Set = delegate (int v) { Settings.RadarRange = v; }
             });
-            AddToggle("m_enemyannounce", () => Settings.EnemyAnnounce, v => Settings.EnemyAnnounce = v);
-            AddToggle("m_attackwarn", () => Settings.AttackWarn, v => Settings.AttackWarn = v);
-            AddToggle("m_health", () => Settings.HealthTones, v => Settings.HealthTones = v);
+            AddToggle("m_enemyannounce", () => Settings.EnemyAnnounce, v => Settings.EnemyAnnounce = v, delegate { Samples.Fight(0); });
+            AddToggle("m_attackwarn", () => Settings.AttackWarn, v => Settings.AttackWarn = v, delegate { Samples.Attack(0); });
+            AddToggle("m_health", () => Settings.HealthTones, v => Settings.HealthTones = v, delegate { Samples.Health(0); });
             AddToggle("m_boss", () => Settings.BossHealth, v => Settings.BossHealth = v);
             AddToggle("m_room", () => Settings.RoomAnnounce, v => Settings.RoomAnnounce = v);
-            AddToggle("m_deadend", () => Settings.DeadEnd, v => Settings.DeadEnd = v);
-            AddToggle("m_hazards", () => Settings.Hazards, v => Settings.Hazards = v);
-            AddToggle("m_pickupspeak", () => Settings.PickupSpeak, v => Settings.PickupSpeak = v);
-            AddToggle("m_itemnav", () => Settings.ItemNav, v => Settings.ItemNav = v);
+            AddToggle("m_deadend", () => Settings.DeadEnd, v => Settings.DeadEnd = v, delegate { Samples.Wall(0); });
+            AddToggle("m_hazards", () => Settings.Hazards, v => Settings.Hazards = v, delegate { Samples.Pit(0); Samples.Toy(700); });
+            AddToggle("m_pickupspeak", () => Settings.PickupSpeak, v => Settings.PickupSpeak = v, delegate { Samples.Pickup(0); });
+            AddToggle("m_itemnav", () => Settings.ItemNav, v => Settings.ItemNav = v, delegate { Samples.ItemAppears(0); });
             _entries.Add(new Choice
             {
                 Key = "m_countbtn",
@@ -156,14 +159,15 @@ namespace RCGAccess
                 Get = delegate { return Settings.EnemyCountButton; },
                 Set = delegate (int v) { Settings.EnemyCountButton = v; }
             });
-            AddToggle("m_moneytones", () => Settings.MoneyTones, v => Settings.MoneyTones = v);
+            AddToggle("m_moneytones", () => Settings.MoneyTones, v => Settings.MoneyTones = v, delegate { Samples.Money(0); });
             AddToggle("m_moneyspeak", () => Settings.MoneySpeak, v => Settings.MoneySpeak = v);
             _entries.Add(new Number
             {
                 Key = "m_tonevol", Min = 0, Max = 100, Step = 10, Unit = "%",
                 Get = delegate { return Settings.ToneVolume; },
                 Set = delegate (int v) { Settings.ToneVolume = v; },
-                Preview = delegate { Navigator.PreviewBeacon(); }
+                Preview = delegate { Navigator.PreviewBeacon(); },
+                Sample = delegate { Samples.Beacon(0); }
             });
             AddToggle("m_padkeys", () => Settings.PadKeys, v => Settings.PadKeys = v);
             AddToggle("m_autowalkstop", () => Settings.AutoWalkStopForEnemies, v => Settings.AutoWalkStopForEnemies = v);
@@ -177,6 +181,8 @@ namespace RCGAccess
                 Get = delegate { return Settings.DuckLevel; },
                 Set = delegate (int v) { Settings.DuckLevel = v; }
             });
+            AddToggle("m_menusamples", () => Settings.MenuSamples, v => Settings.MenuSamples = v);
+            _entries.Add(new ActionEntry { Key = "m_tonetest", Run = delegate { Samples.All(); } });
             AddToggle("m_verbose", () => Settings.VerboseLog, v => Settings.VerboseLog = v);
             AddToggle("m_everystart", () => Settings.MenuEveryStart, v => Settings.MenuEveryStart = v);
             _entries.Add(new ActionEntry { Key = "m_donation", Run = delegate { OpenUrl("https://buymeacoffee.com/blindretrogamer/", Loc.T("m_donation")); } });
@@ -188,6 +194,26 @@ namespace RCGAccess
         private static void AddToggle(string key, Func<bool> get, Action<bool> set)
         {
             _entries.Add(new Toggle { Key = key, Get = get, Set = set });
+        }
+
+        private static void AddToggle(string key, Func<bool> get, Action<bool> set, Action sample)
+        {
+            _entries.Add(new Toggle { Key = key, Get = get, Set = set, Sample = sample });
+        }
+
+        // the example sound waits until the entry has been read
+        private static Action _sample;
+        private static float _sampleAt;
+
+        private static void UpdateSample()
+        {
+            if (_sample == null) return;
+            float now = Time.realtimeSinceStartup;
+            if (now - _sampleAt > 8f) { _sample = null; return; }
+            if (now - _sampleAt < 0.35f || Speech.IsSpeaking) return;
+            Action a = _sample;
+            _sample = null;
+            a();
         }
 
         private static List<KeyValuePair<string, int>> ReadVoices()
@@ -350,6 +376,8 @@ namespace RCGAccess
             string v = e.Value();
             string s = EntryName(e) + (v.Length > 0 ? ": " + v : "") + ". " + Loc.T("pos", _index + 1, _entries.Count);
             Speech.Say(s, interrupt);
+            _sample = Settings.MenuSamples ? e.Sample : null;
+            _sampleAt = Time.realtimeSinceStartup;
         }
 
         public static void Update()
@@ -363,6 +391,7 @@ namespace RCGAccess
             // keep the game frozen even if something else changed it
             if (Time.timeScale != 0f) { _savedTimeScale = Time.timeScale; Time.timeScale = 0f; }
             if (Time.realtimeSinceStartup - _openedAt < 0.25f) return;
+            UpdateSample();
 
             int mv = ModInput.MenuMove();
             if (mv == -1 || mv == 1)

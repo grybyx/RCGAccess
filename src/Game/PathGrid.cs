@@ -21,9 +21,8 @@ namespace RCGAccess
             if (layer < 0) layer = p.gameObject.layer;
             int m = 0;
             for (int i = 0; i < 32; i++) if (!Physics.GetIgnoreLayerCollision(layer, i)) m |= 1 << i;
-            // other characters are not obstacles for planning
-            int ec = LayerMask.NameToLayer("EntityCollision");
-            if (ec >= 0) m &= ~(1 << ec);
+            // characters share the layer EntityCollision with big objects (benches, garbage cans); characters are
+            // filtered out in Blocked, the objects stay obstacles
             _mask = m;
             return m;
         }
@@ -32,17 +31,30 @@ namespace RCGAccess
 
         private static float _inflate = 1f;
 
+        /// <summary>Object the path leads to (never an obstacle for its own path).</summary>
+        public static Transform Ignore;
+
         private static bool Blocked(Vector3 c, int mask)
         {
             // the player's feet are about 70 cm wide and 10 cm deep; inflate by half a cell so walls between cells are found
             Vector3 half = new Vector3(0.35f * _inflate + Cell * 0.5f, 0.35f, 0.05f + Cell * 0.5f * _inflate);
+            // squeaky toys (triggers) must never be stepped on
+            List<Collider> toys = Navigator.Toys;
+            for (int i = 0; i < toys.Count; i++)
+            {
+                if (toys[i] == null) continue;
+                Bounds tb = toys[i].bounds;
+                if (Mathf.Abs(c.x - tb.center.x) < half.x + tb.extents.x + 0.1f && Mathf.Abs(c.z - tb.center.z) < half.z + tb.extents.z + 0.1f) return true;
+            }
             int n = Physics.OverlapBoxNonAlloc(new Vector3(c.x, 0.5f, c.z), half, _hits, Quaternion.identity, mask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < n; i++)
             {
                 Collider h = _hits[i];
                 if (h == null) continue;
                 if (h.GetComponentInParent<CombatEntity>() != null) continue;
-                if (h.GetComponentInParent<PickupObject>() != null) continue;
+                if (Ignore != null && h.transform.IsChildOf(Ignore)) continue;
+                PickupObject po = h.GetComponentInParent<PickupObject>();
+                if (po != null && !(po is Weapon_TwoHandedOverhead)) continue; // small pickups do not block
                 return true;
             }
             return false;

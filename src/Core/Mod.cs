@@ -18,7 +18,7 @@ namespace RCGAccess
 
     public static class Mod
     {
-        public const string Version = "0.2.1";
+        public const string Version = "0.3.0";
         public static string GameDir;
         public static string DataDir;
         public static string ProtoDir;
@@ -108,6 +108,7 @@ namespace RCGAccess
                 Hotkeys.Update();
                 UiReader.Update();
                 PhoneHelp.Update();
+                NpcHelp.Update();
                 Combat.Update();
                 Navigator.Update();
             }

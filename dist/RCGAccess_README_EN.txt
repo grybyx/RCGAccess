@@ -1,5 +1,58 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.2.1
+Version 0.3.0
+
+New in version 0.3.0
+- Learning the sounds: in the mod menu every feature with its own sound plays that sound after the announcement
+  (switch off with "Play sounds in the mod menu"). New entry "Listen to all sounds" plays all sounds with
+  explanations, like Shift+F6.
+- Pattinson's house: Pattinson is asleep, squeaky toys wake him and he throws you out. The mod says so when you enter,
+  warns with a bright double beep and "Careful, toy left" when a toy lies right in front of you, and guiding walks
+  around the toys. New target "Pattinson, take the keys": hold X there.
+- Because of the new entries, the mod menu opens once by itself on the next start.
+
+New in version 0.2.9
+- Enemies on your line: if the nearest enemy stands at the same depth as you (neither further up nor further down),
+  every knock is followed by a bright click; then your attacks hit. Higher up knocks clearly higher, further down
+  clearly lower. Can be switched off in the mod menu ("Bright click when an enemy is on your line").
+- People and shops: holding X is enough now; the mod prevents the punch that used to interrupt the holding (before,
+  only X together with block helped). With an enemy closer than 3 meters, X punches as usual.
+- Because of the new entry, the mod menu opens once by itself on the next start.
+
+New in version 0.2.8
+- Dialogs and subtitles are only read when switched on in the mod menu, also in conversations with people.
+- Doors: guiding only ends when you really stand in the door area; "Open doors after guiding" then opens the door
+  reliably. The goal now lies a little inside the door area instead of on its edge.
+
+New in version 0.2.7
+- People: if you hold X at a person for more than 1.5 seconds and the game does not start a conversation, the mod starts
+  it (the game's rules still apply, e.g. no conversation during a fight). The reason is written to the log.
+
+New in version 0.2.6
+- People, shops and objects: guiding only ends when the game offers the interaction, and says correctly whether
+  X has to be pressed or held (people like Godai: hold X).
+
+New in version 0.2.5
+- Nobody talks during a fight: the mod now says so instead of staying silent.
+
+New in version 0.2.4
+- No more unwanted going back: after changing rooms you stand in the area of the door you came through. X (held or
+  pressed for attacks) no longer takes you straight back there. Step away a little first, then it works as usual.
+  If you select that door in the navigator and let it guide you, it works right away.
+- New enemies are announced with the side they are on at the moment of speaking; outdated announcements are dropped.
+- Guiding walks around benches, garbage cans and other big objects.
+- Title screen options: switches, text speed and volumes say the chosen value.
+- "Save & Quit" warns: the game only saves when you enter a room.
+- Shop names are also correct when you step up to a shop.
+
+New in version 0.2.3
+- Shops: your money is announced as soon as the shop's own announcement has finished and is no longer cut off.
+  After each purchase "… dollars left" follows. In a shop, right stick right or F5 says your money at any time.
+- After buying, the game asks "Use now?": the mod adds "A eats it now, B puts it in your inventory."
+- "???" on items now reads "effect not known yet" (the game shows the effect only after eating it once).
+
+New in version 0.2.2
+- Shops now have their correct names (before, some stands were called "Tony's Toiletries", e.g. Merv's Burger and
+  Discount Sushi in front of the mall).
 
 New in version 0.2.1
 - Begging enemies no longer count as "enemy nearby": they no longer block guiding, the beacon or fight detection.
@@ -89,7 +142,7 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.2.1 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.3.0 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
 Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and at least one SAPI voice
@@ -142,14 +195,16 @@ Exits are often at the top (further back) or bottom (front) of a room, or behind
 TONES
 - Beacon: short tone from the target direction. Stereo = side, higher = target further up/back, lower = further down/front,
   faster = closer. Triangle for exits, square for the exit toward the quest, sine for shops and people.
-- Enemy knock: soft "tock" of the nearest enemy. Stereo = side, higher = further up, faster = closer,
-  quieter = less enemy energy. Bosses knock lower.
+- Enemy knock: soft "tock" of the nearest enemy. Stereo = side, clearly higher = further up, clearly lower =
+  further down, with a bright click = on your line (your attacks hit), faster = closer, quieter = less enemy energy.
+  Bosses knock lower.
 - Attack warning: two short, bright, hard tones from the side of an attacking enemy nearby.
 - Enemy defeated: falling triad. Fight area locked: two low hard tones; cleared: rising two-tone.
 - Damage: low squeaky square. Healing: rising tone. Below 30 % health: low double pulse every 2.5 seconds.
 - Wall or boundary: noise from the side. Drop nearby: falling tone from the side.
 - Interaction possible: short rising tone, then the announcement. Money: two bright tones. Target reached: rising glide.
-Shift+F6 plays the tones.
+- Squeaky toy right in front of you (Pattinson's house): bright double beep from the side.
+Shift+F6 or the mod menu entry "Listen to all sounds" plays all sounds; in the mod menu every feature also plays its sound.
 
 
 TROUBLESHOOTING DATA

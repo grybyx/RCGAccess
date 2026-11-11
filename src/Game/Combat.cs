@@ -263,14 +263,10 @@ namespace RCGAccess
                 if (boss || prevVisible == 0 || now - _lastEnemySpeech > 6f)
                 {
                     _lastEnemySpeech = now;
-                    string where = GameInfo.SideWord(first.transform.position.x - pp.x) + ", " + GameInfo.Meters(Dist(pp, first.transform.position));
-                    string s;
-                    if (boss) s = Loc.T("boss_appears", EnemyName(first), where);
-                    else if (visible > 1 && prevVisible == 0) s = Loc.T("enemies_n", visible, EnemyName(first), where);
-                    else s = Loc.T("enemy_new", EnemyName(first), where);
-                    Speech.Say(s, false);
+                    _pendEnemy = first; _pendBoss = boss; _pendCount = visible > 1 && prevVisible == 0 ? visible : 0; _pendAt = now;
                 }
             }
+            SayPendingEnemy(pp, now);
 
             // knocking for the nearest enemy
             if (Settings.Radar && nearest != null && best <= Settings.RadarRange && now >= _nextKnock)
@@ -284,17 +280,49 @@ namespace RCGAccess
             }
         }
 
+        private static EnemyEnitity _pendEnemy;
+        private static bool _pendBoss;
+        private static int _pendCount;
+        private static float _pendAt;
+
+        /// <summary>New enemy announcement. It waits until speech is quiet and then takes the side the enemy is on at that
+        /// moment; a queued text could otherwise name a side the enemy has long left. Stale announcements are dropped.</summary>
+        private static void SayPendingEnemy(Vector3 pp, float now)
+        {
+            if (_pendEnemy == null) return;
+            if (now - _pendAt > 4f || !_pendEnemy.gameObject.activeInHierarchy) { _pendEnemy = null; return; }
+            if (Speech.IsSpeaking && !_pendBoss) return;
+            Vector3 ep = _pendEnemy.transform.position;
+            float dx = ep.x - pp.x;
+            string where = GameInfo.SideWord(dx) + ", " + GameInfo.Meters(Dist(pp, ep));
+            string s;
+            if (_pendBoss) s = Loc.T("boss_appears", EnemyName(_pendEnemy), where);
+            else if (_pendCount > 1) s = Loc.T("enemies_n", _pendCount, EnemyName(_pendEnemy), where);
+            else s = Loc.T("enemy_new", EnemyName(_pendEnemy), where);
+            Log.Verbose("Gegner-Ansage dx " + dx.ToString("F2") + " Spieler x " + pp.x.ToString("F2") + " Gegner x " + ep.x.ToString("F2"));
+            Speech.Say(s, false);
+            _pendEnemy = null;
+        }
+
         /// <summary>Soft "tock": side = stereo, higher = further up (back), lower = further down (front), quieter = weaker enemy.</summary>
         private static void Knock(float dx, float dz, float hp, bool boss) { Knock(dx, dz, hp, boss, false); }
 
+        /// <summary>Depth difference within which an enemy counts as "on your line" (your attacks can reach it).</summary>
+        public const float LineDepth = 0.35f;
+
         private static void Knock(float dx, float dz, float hp, bool boss, bool armed)
         {
+            bool line = Mathf.Abs(dz) <= LineDepth;
             float pitch = 240f;
-            if (dz > 0.4f) pitch = 240f * Mathf.Lerp(1.15f, 1.6f, Mathf.Clamp01((dz - 0.4f) / 3f));
-            else if (dz < -0.4f) pitch = 240f * Mathf.Lerp(0.85f, 0.6f, Mathf.Clamp01((-dz - 0.4f) / 3f));
+            // clearly higher above you (further back), clearly lower below you (in front)
+            if (!line && dz > 0) pitch = 240f * Mathf.Lerp(1.35f, 1.9f, Mathf.Clamp01((dz - LineDepth) / 3f));
+            else if (!line) pitch = 240f * Mathf.Lerp(0.72f, 0.5f, Mathf.Clamp01((-dz - LineDepth) / 3f));
             if (boss) pitch *= 0.75f;
             float vol = (0.2f + 0.8f * Mathf.Clamp01(hp)) * Settings.KnockVolume / 100f;
-            Speech.RawTone(pitch, 55, StrongPan(dx), vol, armed ? 1 : 0, pitch * 0.7f, 0);
+            float pan = StrongPan(dx);
+            Speech.RawTone(pitch, 55, pan, vol, armed ? 1 : 0, pitch * 0.7f, 0);
+            // same line: a bright click right after the knock - now your attacks can hit
+            if (line && Settings.LineTone) Speech.RawTone(2200f, 18, pan, vol * 0.55f, 1, 2600f, 60f);
         }
 
         /// <summary>Clear stereo side: anything more than 30 cm to the side is at least half way to that ear.</summary>

@@ -53,6 +53,13 @@ namespace RCGAccess
                         Vector3 cp;
                         if (pl != null && Geometry.ClosestPoint(Door, pl.transform.position, out cp)) return cp;
                     }
+                    // people, shops and objects: the spot of their interaction area nearest to the player
+                    if ((Kind == Kind.Person || Kind == Kind.Shop || Kind == Kind.Thing) && Obj is InteractEntity && !(Obj is PickupObject))
+                    {
+                        RCG.Player pl = GameInfo.Player;
+                        Vector3 cp;
+                        if (pl != null && Geometry.ClosestPoint((InteractEntity)Obj, pl.transform.position, out cp)) return cp;
+                    }
                     Vector3 raw = RawPos;
                     float now = Time.realtimeSinceStartup;
                     if (now - _goalAt > 1f || (raw - _goalFrom).sqrMagnitude > 0.09f)
@@ -127,6 +134,19 @@ namespace RCGAccess
 
         /// <summary>True while the game shows the interaction symbol of this object for player 1.</summary>
         public static bool InRange(Component c) { return c != null && _inRange.Contains(c.GetInstanceID()); }
+        private static readonly Dictionary<int, InteractEntity> _inRangeObj = new Dictionary<int, InteractEntity>();
+
+        /// <summary>True when the player stands at a person, shop or other object that needs X held (not a pickup).</summary>
+        public static bool HoldTargetInRange()
+        {
+            foreach (KeyValuePair<int, InteractEntity> kv in _inRangeObj)
+            {
+                InteractEntity e = kv.Value;
+                if (e == null || !_inRange.Contains(kv.Key) || e is PickupObject || e is Door) continue;
+                if (e._howLongToHold > 0f && e.isActiveAndEnabled) return true;
+            }
+            return false;
+        }
 
         // room map (learned)
         private static readonly Dictionary<string, HashSet<string>> _graph = new Dictionary<string, HashSet<string>>();
@@ -137,8 +157,53 @@ namespace RCGAccess
         private static FieldInfo _npcName = typeof(InteractEntity_QuestNPC).GetField("_npcName", BindingFlags.Instance | BindingFlags.NonPublic);
         private static FieldInfo _envType = typeof(InteractEntity_Environment).GetField("_interactType", BindingFlags.Instance | BindingFlags.NonPublic);
 
+        private static float _sceneAt;
+        private static Door _cameDoor;
+        private static bool _cameDone, _cameSaid;
+        private static float _cameHeldSince = -1f;
+        private static Vector3 _spawnPos;
+        private static bool _spawnKnown;
+
+        /// <summary>Remembers where the player appeared in the new room (first frame with a player).</summary>
+        private static void TrackSpawn()
+        {
+            if (_spawnKnown || Time.realtimeSinceStartup - _sceneAt < 0.5f) return;
+            RCG.Player p = GameInfo.Player;
+            if (p == null) return;
+            _spawnPos = p.transform.position;
+            _spawnKnown = true;
+        }
+
+        /// <summary>True while the player still stands in the door they came through: holding X there (often still held
+        /// from entering, or pressed for an attack) would take them straight back.</summary>
+        public static bool BlockCameDoor(bool xHeld)
+        {
+            if (_cameDoor == null) return false;
+            float now = Time.realtimeSinceStartup;
+            RCG.Player cp = GameInfo.Player;
+            bool movedAway = cp != null && _spawnKnown && Vector3.Distance(cp.transform.position, _spawnPos) > 3f;
+            if (!InRange(_cameDoor) || movedAway)
+            {
+                _cameDoor = null; _cameDone = true;
+                return false;
+            }
+            if (xHeld)
+            {
+                if (_cameHeldSince < 0) _cameHeldSince = now;
+                if (!_cameSaid && now - _cameHeldSince > 0.5f && now - _sceneAt > 1.5f)
+                {
+                    _cameSaid = true;
+                    Speech.Say(Loc.T("door_came"), false);
+                }
+            }
+            else _cameHeldSince = -1f;
+            return true;
+        }
+
         public static void OnSceneLoaded(string scene)
         {
+            _sceneAt = Time.realtimeSinceStartup;
+            _cameDoor = null; _cameDone = false; _cameSaid = false; _cameHeldSince = -1f; _spawnKnown = false;
             try
             {
                 if (_lastDoorInRange != null && !string.IsNullOrEmpty(_scene)) ForgetLocked(_scene, _lastDoorInRange);
@@ -152,6 +217,7 @@ namespace RCGAccess
             _hazardWarned.Clear();
             _interactSaid.Clear();
             _inRange.Clear();
+            _inRangeObj.Clear();
             _pits.Clear();
             _nextHazardScan = 0;
             _knownItems.Clear();
@@ -200,8 +266,7 @@ namespace RCGAccess
                 foreach (InteractEntity_Store s in UnityEngine.Object.FindObjectsOfType<InteractEntity_Store>())
                 {
                     if (!s.isActiveAndEnabled) continue;
-                    string n = _storeName != null ? _storeName.GetValue(s) as string : null;
-                    _targets.Add(new Target { Kind = Kind.Shop, Obj = s, Name = Loc.T("shop", NiceName(n, s.name)) });
+                    _targets.Add(new Target { Kind = Kind.Shop, Obj = s, Name = Loc.T("shop", StoreName(s)) });
                 }
                 foreach (InteractEntity_QuestNPC q in UnityEngine.Object.FindObjectsOfType<InteractEntity_QuestNPC>())
                 {
@@ -209,9 +274,18 @@ namespace RCGAccess
                     string n = _npcName != null ? _npcName.GetValue(q) as string : null;
                     _targets.Add(new Target { Kind = Kind.Person, Obj = q, Name = Loc.T("person", NiceName(n, q.name)) });
                 }
+                // the sleeping security guard in Pattinson's house: take the keys
+                HashSet<InteractEntity> special = new HashSet<InteractEntity>();
+                foreach (Quest_MallEntrance_SecurityGuard g in UnityEngine.Object.FindObjectsOfType<Quest_MallEntrance_SecurityGuard>())
+                {
+                    InteractEntity gi = g.GetComponent<InteractEntity>();
+                    if (gi == null || !gi.isActiveAndEnabled || !gi.CanInteract) continue;
+                    special.Add(gi);
+                    _targets.Add(new Target { Kind = Kind.Thing, Obj = gi, Name = Loc.T("guard_keys") });
+                }
                 foreach (InteractEntity_Environment en in UnityEngine.Object.FindObjectsOfType<InteractEntity_Environment>())
                 {
-                    if (!en.isActiveAndEnabled || !en.CanInteract) continue;
+                    if (!en.isActiveAndEnabled || !en.CanInteract || special.Contains(en)) continue;
                     _targets.Add(new Target { Kind = Kind.Thing, Obj = en, Name = EnvName(en) });
                 }
                 AddItemTargets();
@@ -421,6 +495,29 @@ namespace RCGAccess
             Speech.Say(s, false);
         }
 
+        private static FieldInfo _storeData = typeof(InteractEntity_Store).GetField("_storeToDisplay", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        /// <summary>Shop name: the store data the shop really opens (the "_storeName" text on the stands is often a copy
+        /// from another shop, e.g. every stand in the mall entrance says "Tony's Toiletries"), else the object name.</summary>
+        private static string StoreName(InteractEntity_Store s)
+        {
+            string on = s.name;
+            if (on.StartsWith("StoreInteract_", StringComparison.OrdinalIgnoreCase) && on.Length > 14) on = on.Substring(14).Trim();
+            if (on.IndexOf(' ') > 0 || on.IndexOf('\'') > 0) return on; // a real shop name like "Merv's Burger"
+            try
+            {
+                Data_Store ds = _storeData != null ? _storeData.GetValue(s) as Data_Store : null;
+                if (ds != null && !string.IsNullOrEmpty(ds.StoreName))
+                {
+                    string t = GameInfo.Translate(ds.StoreName);
+                    if (!string.IsNullOrEmpty(t) && t != "null") return t;
+                    if (ds.StoreName.IndexOf('_') < 0 || ds.StoreName.IndexOf(' ') >= 0) return ds.StoreName;
+                }
+            }
+            catch { }
+            return GameInfo.Readable(on);
+        }
+
         private static string NiceName(string key, string fallback)
         {
             if (!string.IsNullOrEmpty(key))
@@ -534,6 +631,7 @@ namespace RCGAccess
         // ---------------- update ----------------
         public static void Update()
         {
+            TrackSpawn();
             float now = Time.realtimeSinceStartup;
             RCG.Player p = GameInfo.Player;
             bool quiet = GameInfo.Quiet;
@@ -604,13 +702,19 @@ namespace RCGAccess
                         if (ie != null && ie.AutoInteract) return " " + Loc.T("hint_touch");
                         return " " + Loc.T("hint_press", GameInfo.ButtonName(2));
                     }
-                default: return " " + Loc.T("hint_press", GameInfo.ButtonName(2));
+                default:
+                    {
+                        InteractEntity ie = t.Obj as InteractEntity;
+                        bool hold = ie != null && ie._howLongToHold > 0f;
+                        return " " + Loc.T(hold ? "hint_hold" : "hint_press", GameInfo.ButtonName(2));
+                    }
             }
         }
 
         // ---------------- hazards ----------------
         private static void UpdateHazards(RCG.Player p, float now)
         {
+            UpdateToys(p.transform.position, now); // the toy list is also needed by the path finder
             if (!Settings.Hazards) return;
             if (now >= _nextHazardScan)
             {
@@ -646,6 +750,58 @@ namespace RCGAccess
             }
         }
 
+        // squeaky toys in Pattinson's house: stepping on one wakes the guard, who throws you out
+        private static readonly List<Collider> _toys = new List<Collider>();
+        private static float _nextToyScan, _toySpeechAt = -20f;
+        private static string _toyScene;
+
+        public static List<Collider> Toys { get { return _toys; } }
+
+        private static void UpdateToys(Vector3 pp, float now)
+        {
+            if (now >= _nextToyScan || _toyScene != GameInfo.SceneName)
+            {
+                _nextToyScan = now + 2f;
+                bool first = _toyScene != GameInfo.SceneName;
+                _toyScene = GameInfo.SceneName;
+                _toys.Clear();
+                try
+                {
+                    foreach (Quest_MallEntrance_FloorOnTriggerEnter f in UnityEngine.Object.FindObjectsOfType<Quest_MallEntrance_FloorOnTriggerEnter>())
+                        foreach (Collider c in f.GetComponentsInChildren<Collider>())
+                            if (c.enabled && c.gameObject.activeInHierarchy) _toys.Add(c);
+                }
+                catch { }
+                if (first && _toys.Count > 0 && UnityEngine.Object.FindObjectOfType<Quest_MallEntrance_SecurityGuard>() != null)
+                {
+                    Log.Write("Spielzeug im Raum: " + _toys.Count);
+                    Speech.Say(Loc.T("toys_room", _toys.Count), false);
+                }
+            }
+            if (!Settings.Hazards) return;
+            foreach (Collider c in _toys)
+            {
+                if (c == null) continue;
+                Vector3 cp = c.bounds.ClosestPoint(pp);
+                float dx = cp.x - pp.x, dz = cp.z - pp.z;
+                // the feet are about 70 cm wide: warn when a toy is within reach of the next steps
+                if (Mathf.Abs(dx) > 1.1f || Mathf.Abs(dz) > 0.5f) continue;
+                int id = c.GetInstanceID();
+                float last;
+                if (_hazardWarned.TryGetValue(id, out last) && now - last < 1.5f) continue;
+                _hazardWarned[id] = now;
+                float pan = Combat.StrongPan(dx);
+                Speech.Tone(1400, 40, pan, 0.6f, 0, 2100, 0);
+                Speech.Tone(1400, 40, pan, 0.6f, 0, 2100, 90);
+                if (now - _toySpeechAt > 4f)
+                {
+                    _toySpeechAt = now;
+                    string where = Mathf.Abs(dx) >= Mathf.Abs(dz) * 2f ? GameInfo.SideWord(dx) : Loc.T(dz > 0 ? "dir_up" : "dir_down");
+                    Speech.Say(Loc.T("toy_warn", where), true);
+                }
+            }
+        }
+
         // ---------------- interaction hints (from patch) ----------------
         public static void OnInteractSymbol(InteractEntity e, int player, bool enabled)
         {
@@ -663,7 +819,18 @@ namespace RCGAccess
                     return;
                 }
                 _inRange.Add(rid);
+                _inRangeObj[rid] = e;
                 if (door != null) _lastDoorInRange = door.name;
+                // the door the player came through: the player spawns inside its area
+                RCG.Player cp = GameInfo.Player;
+                if (door != null && !_cameDone && _cameDoor == null && Time.realtimeSinceStartup - _sceneAt < 8f
+                    && cp != null && _spawnKnown && Vector3.Distance(cp.transform.position, _spawnPos) < 2.5f)
+                {
+                    _cameDoor = door;
+                    Log.Write("Ankunftstuer: " + door.name + " (X dort gesperrt, bis der Bereich verlassen wird)");
+                    return;
+                }
+                if (door != null && door == _cameDoor) return;
                 if (locked) return; // doors cannot be used during a fight: stay silent
                 if (door != null && DoorLocked(door))
                 {
@@ -698,7 +865,7 @@ namespace RCGAccess
         {
             Door d = e as Door;
             if (d != null) return Loc.T("door_to", GameInfo.RoomName(d.DoorData.ToScene), Loc.T("edir_" + d.DoorData.DoorEnterDirection.ToString().ToLower()));
-            if (e is InteractEntity_Store) return Loc.T("shop", NiceName(_storeName.GetValue(e) as string, e.name));
+            if (e is InteractEntity_Store) return Loc.T("shop", StoreName((InteractEntity_Store)e));
             if (e is InteractEntity_QuestNPC) return Loc.T("person", NiceName(_npcName.GetValue(e) as string, e.name));
             if (e is InteractEntity_Environment) return EnvName((InteractEntity_Environment)e);
             Weapon w = e as Weapon;
@@ -721,6 +888,7 @@ namespace RCGAccess
             RCG.Player p = GameInfo.Player;
             if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
             if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
+            if (t.Obj != null && t.Obj == _cameDoor) { _cameDoor = null; _cameDone = true; } // the player wants to go back
             _walkTarget = t;
             AutoWalk = true;
             _walkStart = Time.realtimeSinceStartup;
@@ -754,6 +922,7 @@ namespace RCGAccess
         {
             _path.Clear();
             _pathIdx = 0;
+            PathGrid.Ignore = _walkTarget != null && _walkTarget.Obj != null ? _walkTarget.Obj.transform : null;
             List<Vector3> grid = PathGrid.Find(p, from, to);
             if (grid != null && grid.Count > 0)
             {
@@ -839,8 +1008,8 @@ namespace RCGAccess
             }
             float gdx = goal.x - pos.x, gdz = goal.z - pos.z;
             // doors: stop in the middle of the door's area, as soon as the game lets us use the door
-            if (t.Kind == Kind.Exit && !t.IsEdge && t.Door != null && InRange(t.Door)
-                && (Mathf.Abs(gdx) < 0.35f || now - _stuckSince > 0.6f))
+            bool realDoor = t.Kind == Kind.Exit && !t.IsEdge && t.Door != null;
+            if (realDoor && InRange(t.Door))
             {
                 bool locked = Combat.ScreenLockRunning || !_walkTarget_DoorCanEnter(t) || t.Locked;
                 _interactSaid[t.Door.GetInstanceID()] = now;
@@ -866,7 +1035,20 @@ namespace RCGAccess
                     return false;
                 }
             }
-            else if (!beggar && Mathf.Abs(gdx) < 0.5f && Mathf.Abs(gdz) < 0.45f)
+            else if ((t.Kind == Kind.Person || t.Kind == Kind.Shop || t.Kind == Kind.Thing) && t.Obj is InteractEntity && !(t.Obj is PickupObject))
+            {
+                // people, shops, objects: arrived when the game offers the interaction (otherwise X does nothing)
+                InteractEntity ie = (InteractEntity)t.Obj;
+                bool close = Mathf.Abs(gdx) < 0.5f && Mathf.Abs(gdz) < 0.45f;
+                if (InRange(ie) || (close && now - _stuckSince > 1.5f))
+                {
+                    if (!InRange(ie)) Log.Write("Angekommen ohne Interaktionsangebot: " + ie.name);
+                    _interactSaid[ie.GetInstanceID()] = now;
+                    Arrive(t, Loc.T("arrived", t.Label()) + ArrivalHint(t));
+                    return false;
+                }
+            }
+            else if (!beggar && !realDoor && Mathf.Abs(gdx) < 0.5f && Mathf.Abs(gdz) < 0.45f)
             {
                 if (t.Kind == Kind.Exit && t.IsEdge)
                 {
@@ -897,7 +1079,9 @@ namespace RCGAccess
             }
             if (beggar && _pathIdx >= _path.Count - 1) { dx = gdx; dz = gdz; } // walk right into the begging enemy to grab it
             // doors: the path grid keeps a safety margin to walls; for the last bit walk straight into the door area
-            bool doorFinal = t.Kind == Kind.Exit && !t.IsEdge && t.Door != null && _pathIdx >= _path.Count - 1 && Mathf.Abs(gdx) < 1.5f && Mathf.Abs(gdz) < 2f;
+            bool interactTarget = (t.Kind == Kind.Exit && !t.IsEdge && t.Door != null)
+                || ((t.Kind == Kind.Person || t.Kind == Kind.Shop || t.Kind == Kind.Thing) && t.Obj is InteractEntity && !(t.Obj is PickupObject));
+            bool doorFinal = interactTarget && _pathIdx >= _path.Count - 1 && Mathf.Abs(gdx) < 1.5f && Mathf.Abs(gdz) < 2f;
             if (doorFinal) { dx = gdx; dz = gdz; }
             h = Mathf.Abs(dx) > 0.12f ? (dx > 0 ? 1 : -1) : 0;
             v = Mathf.Abs(dz) > 0.08f ? (dz > 0 ? 1 : -1) : 0;

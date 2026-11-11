@@ -60,6 +60,8 @@ namespace RCGAccess
             }
             catch (Exception e) { Log.Error("Patch Player.Stamina", e); }
             Post(h, typeof(InteractEntity_DropV2), "Interact", "DropV2Post", new Type[] { typeof(int), typeof(bool).MakeByRefType() });
+            Post(h, typeof(InteractEntity_QuestNPC), "Interact", "QuestNpcPost", new Type[] { typeof(CombatEntity), typeof(bool).MakeByRefType() });
+            Post(h, typeof(InteractEntity_QuestNPC), "Interact", "QuestNpcIdPost", new Type[] { typeof(int), typeof(bool).MakeByRefType() });
             Post(h, typeof(InteractEntity_Drop), "Interact", "DropPost", new Type[] { typeof(int), typeof(bool).MakeByRefType() });
         }
 
@@ -73,7 +75,7 @@ namespace RCGAccess
             try
             {
                 if (!__0) return;
-                string s = UiReader.ReadFields(__instance, "_itemName", "_itemPrice", "_itemDescription");
+                string s = UiReader.ReadFields(__instance, "_itemName", "_itemPrice", "_itemDescription").Replace("???", Loc.T("phone_slot_unknown"));
                 try
                 {
                     RCG.Player pl = GameInfo.Player;
@@ -197,6 +199,22 @@ namespace RCGAccess
             Combat.OnEnemyDeathReported(__0);
         }
 
+        public static void QuestNpcPost(InteractEntity_QuestNPC __instance, CombatEntity __0, ref bool __1)
+        {
+            try
+            {
+                RCG.Player pl = __0 as RCG.Player;
+                if (pl == null || pl.PlayerID != 0) return;
+                UiReader.OnNpcTalk(__instance, __1);
+            }
+            catch (Exception e) { Log.Error("QuestNpcPost", e); }
+        }
+
+        public static void QuestNpcIdPost(InteractEntity_QuestNPC __instance, int __0, ref bool __1)
+        {
+            NpcHelp.OnInteract(__instance, __0, __1);
+        }
+
         public static void DropV2Post(InteractEntity_DropV2 __instance, int __0, ref bool __1)
         {
             if (__1 && __0 == 0) Pickups.OnDropV2(__instance);
@@ -220,6 +238,7 @@ namespace RCGAccess
         private static MethodInfo _setH = AccessTools.PropertySetter(typeof(CombatInput), "HorizontalDir");
         private static MethodInfo _setV = AccessTools.PropertySetter(typeof(CombatInput), "VerticalDir");
         private static MethodInfo _setRun = AccessTools.PropertySetter(typeof(CombatInput), "Run");
+        private static MethodInfo _setQuick = AccessTools.PropertySetter(typeof(CombatInput), "Quick");
         private static readonly object[] _arg = new object[1];
         private static PlayerInput _cachedInput;
         private static RCG.Player _cachedPlayer;
@@ -242,6 +261,11 @@ namespace RCGAccess
                 int rawH = __instance.HorizontalDir, rawV = __instance.VerticalDir;
                 if (__instance.Quick || __instance.Heavy || __instance.Special) Combat.NotePlayerAttack();
                 int h, v;
+                if (Navigator.BlockCameDoor(__instance.InteractQuick)) __instance.InteractQuick = false;
+                // at people and shops X has to be held; the quick attack it also starts would break the holding
+                // (players found that holding block at the same time helps) - so no quick attack there unless an enemy is close
+                if (__instance.Quick && __instance.InInteractRange && _setQuick != null && Combat.NearestHostileDist > 3f && Navigator.HoldTargetInRange())
+                { _arg[0] = false; _setQuick.Invoke(__instance, _arg); }
                 if (Navigator.AutoEnter(rawH, rawV)) __instance.InteractQuick = true;
                 if (Navigator.WalkInput(p, rawH, rawV, out h, out v))
                 {

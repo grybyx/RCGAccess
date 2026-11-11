@@ -4,7 +4,7 @@
 
 RCGAccess macht das Beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) für blinde und sehbehinderte Spielerinnen und Spieler spielbar. Der Mod liest Menüs, Dialoge und Einblendungen mit einer SAPI-Stimme in der Sprache des Spiels vor. Dazu kommen Orientierungstöne für Gegner, Ausgänge, Gegenstände und Gesundheit sowie ein Navigator, der dich zu Türen und Zielen führt.
 
-> **Vorabversion (Beta), 0.2.1.** Getestet ist das Spiel bis einschließlich zum ersten Endgegner. Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
+> **Vorabversion (Beta), 0.3.0.** Getestet ist das Spiel bis in das zweite Gebiet (Crosstown). Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
 
 Nur für **River City Girls** (2019). River City Girls Zero und River City Girls 2 werden nicht unterstützt.
 
@@ -21,7 +21,7 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
   - Bewegungen: komplette Tastenfolge jeder Technik.
   - Rekruten.
 - **Gegner:**
-  - Radar: Ein Klopfen kommt von der Seite des nächsten Gegners. Es wird schneller, je näher er ist, und leiser, je weniger Energie er hat.
+  - Radar: Ein Klopfen kommt von der Seite des nächsten Gegners. Es wird schneller, je näher er ist, und leiser, je weniger Energie er hat. Höher = Gegner weiter oben, tiefer = weiter unten, heller Klick = Gegner auf deiner Linie.
   - Angriffswarnung, Dreiklang beim Sieg, Ansage der Anzahl auf Knopfdruck.
   - Bewaffnete und bettelnde Gegner werden angesagt, mit Hilfe beim Rekrutieren.
 - **Navigator:**
@@ -32,7 +32,7 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
 - **Gesundheit und Fundstücke:** Töne bei Schaden, Heilung und niedriger Gesundheit. Ansage von Eingesammeltem und Geld. Bossenergie in Schritten.
 - **Läden:** Ansage des eigenen Geldes beim Öffnen und nach jedem Kauf, zu teure Waren werden genannt.
 - **Schutz vor Schaden** (wählbar): halber Schaden oder unverwundbar.
-- **Mod-Menü (F11):** Alle Funktionen lassen sich einzeln schalten. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt.
+- **Mod-Menü (F11):** Alle Funktionen lassen sich einzeln schalten, jede Funktion mit eigenem Ton spielt ihn vor, „Alle Töne anhören“ erklärt alle Töne. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt.
 
 ## Installation
 
@@ -89,7 +89,7 @@ Nach dem Spielen `RCGAccess_Daten_sammeln.bat` im Spielordner starten. Die Datei
 
 RCGAccess makes the beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) playable for blind and visually impaired players. The mod reads menus, dialogs and pop-ups with a SAPI voice in the game's language. It adds orientation sounds for enemies, exits, items and health, and a navigator that guides you to doors and goals.
 
-> **Pre-release (beta), 0.2.1.** Tested up to and including the first boss. Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
+> **Pre-release (beta), 0.3.0.** Tested into the second area (Crosstown). Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
 
 Only for **River City Girls** (2019). River City Girls Zero and River City Girls 2 are not supported.
 
@@ -106,7 +106,7 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
   - Moves: full button sequence of every move.
   - Recruits.
 - **Enemies:**
-  - Radar: a knock comes from the side of the nearest enemy. It gets faster when the enemy is closer and quieter when it has less energy.
+  - Radar: a knock comes from the side of the nearest enemy. It gets faster when the enemy is closer and quieter when it has less energy. Higher = enemy further up, lower = further down, bright click = enemy on your line.
   - Attack warning, triad on defeat, enemy count on a button.
   - Armed and begging enemies are announced, with help for recruiting.
 - **Navigator:**
@@ -117,7 +117,7 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
 - **Health and pickups:** tones for damage, healing and low health. Pickups and money are announced. Boss health is announced in steps.
 - **Shops:** your money is announced on opening and after each purchase; items you cannot afford are marked.
 - **Damage protection** (optional): half damage or invulnerable.
-- **Mod menu (F11):** every feature can be switched on or off. It opens on the first start, before the game begins.
+- **Mod menu (F11):** every feature can be switched on or off, features with their own sound play it, "Listen to all sounds" explains all sounds. It opens on the first start, before the game begins.
 
 ## Installation
 

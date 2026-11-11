@@ -1,5 +1,58 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.2.1
+Version 0.3.0
+
+Neu in Version 0.3.0
+- Töne lernen: Im Mod-Menü spielt jede Funktion mit eigenem Ton diesen Ton nach der Ansage vor (abschaltbar mit
+  "Töne im Mod-Menü vorspielen"). Neuer Eintrag "Alle Töne anhören" spielt alle Töne mit Erklärung, wie Umschalt+F6.
+- Pattinsons Haus: Pattinson schläft, quietschendes Spielzeug weckt ihn, dann fliegst du raus. Der Mod sagt das beim
+  Betreten an, warnt mit hellem Doppelpiep und "Vorsicht, Spielzeug links", wenn Spielzeug direkt vor dir liegt, und
+  das Hinführen geht um das Spielzeug herum. Neues Ziel "Pattinson, Schlüssel nehmen": dort X halten.
+- Das Mod-Menü öffnet sich wegen der neuen Einträge beim nächsten Start einmal von selbst.
+
+Neu in Version 0.2.9
+- Gegner auf deiner Linie: Steht der nächste Gegner auf gleicher Höhe wie du (weder weiter oben noch weiter unten),
+  folgt jedem Klopfen ein heller Klick; dann treffen deine Angriffe. Steht er höher, klopft es deutlich höher,
+  steht er tiefer, deutlich tiefer. Abschaltbar im Mod-Menü ("Heller Klick, wenn ein Gegner auf deiner Linie ist").
+- Personen und Läden: X halten reicht jetzt; der Mod verhindert dabei den Schlag, der das Halten bisher unterbrochen
+  hat (vorher half nur X zusammen mit Blocken). Ist ein Gegner näher als 3 Meter, schlägt X wie gewohnt.
+- Das Mod-Menü öffnet sich wegen des neuen Eintrags beim nächsten Start einmal von selbst.
+
+Neu in Version 0.2.8
+- Dialoge und Untertitel werden nur noch vorgelesen, wenn sie im Mod-Menü eingeschaltet sind, auch bei Gesprächen mit
+  Personen.
+- Türen: Das Hinführen endet erst, wenn du wirklich im Türbereich stehst; dann öffnet "Türen nach dem Hinführen öffnen"
+  die Tür zuverlässig. Das Ziel liegt jetzt etwas innerhalb des Türbereichs statt an seinem Rand.
+
+Neu in Version 0.2.7
+- Personen: Hältst du bei einer Person X länger als 1,5 Sekunden und das Spiel startet kein Gespräch, startet der Mod
+  es (die Regeln des Spiels gelten weiter, etwa kein Gespräch im Kampf). Der Grund wird ins Protokoll geschrieben.
+
+Neu in Version 0.2.6
+- Personen, Läden und Objekte: Das Hinführen endet erst, wenn das Spiel die Interaktion anbietet, und sagt richtig,
+  ob X gedrückt oder gehalten werden muss (Personen wie Godai: X halten).
+
+Neu in Version 0.2.5
+- Während eines Kampfes redet niemand: Der Mod sagt das jetzt, statt still zu bleiben.
+
+Neu in Version 0.2.4
+- Kein ungewolltes Zurückgehen mehr: Nach einem Raumwechsel stehst du im Bereich der Tür, durch die du gekommen bist.
+  X (gehalten oder zum Angreifen) bringt dich dort nicht mehr sofort zurück. Erst ein paar Schritte weg, dann geht
+  es wie gewohnt. Wählst du diese Tür im Navigator und lässt dich hinführen, geht es sofort.
+- Neue Gegner werden mit der Seite angesagt, auf der sie beim Sprechen gerade sind; veraltete Ansagen entfallen.
+- Hinführen weicht Bänken, Mülltonnen und anderen großen Gegenständen aus.
+- Optionen im Hauptmenü: Schalter, Textgeschwindigkeit und Lautstärken sagen den gewählten Wert.
+- "Speichern & beenden" warnt: Das Spiel speichert nur beim Betreten eines Raums.
+- Ladennamen auch beim Herantreten richtig.
+
+Neu in Version 0.2.3
+- Läden: Dein Geld wird angesagt, sobald die Ansage des Ladens fertig ist, und wird nicht mehr abgeschnitten.
+  Nach jedem Kauf folgt "Noch … Dollar". Rechter Stick nach rechts oder F5 sagt im Laden jederzeit dein Geld.
+- Nach dem Kauf fragt das Spiel "Jetzt benutzen?": Der Mod ergänzt "A isst es sofort, B legt es ins Inventar."
+- "???" bei Waren heißt jetzt "Wirkung noch unbekannt" (die Wirkung zeigt das Spiel erst nach dem ersten Essen).
+
+Neu in Version 0.2.2
+- Läden heißen jetzt richtig (vorher hießen manche Stände "Tony's Toiletries", zum Beispiel Merv's Burger und
+  Discount Sushi vor dem Einkaufszentrum).
 
 Neu in Version 0.2.1
 - Bettelnde Gegner zählen nicht mehr als "Gegner in der Nähe": Hinführen, Peilton und Kampferkennung werden durch sie
@@ -121,7 +174,7 @@ INSTALLATION
    Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
 2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
    das kann ein paar Sekunden länger dauern.
-3. Beim ersten Start sagt der Mod "RCGAccess 0.2.1 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.3.0 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
    Erst mit "Speichern und schließen" geht es ins Spiel.
 
 Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und mindestens eine
@@ -203,17 +256,21 @@ TÖNE
 - Peilton (Navigator): kurzer Ton aus der Richtung des Ziels. Stereo = Seite, höher = Ziel liegt weiter oben (hinten),
   tiefer = weiter unten (vorne), schneller = näher. Dreieck-Klang bei Ausgängen, heller Rechteck-Klang beim Ausgang
   Richtung Quest, weicher Sinus bei Läden und Personen.
-- Gegner-Klopfen: weiches "Tock" des nächsten Gegners. Stereo = Seite, höher = Gegner weiter oben,
-  tiefer = weiter unten, schneller = näher, leiser = Gegner hat weniger Energie. Bosse klopfen tiefer.
+- Gegner-Klopfen: weiches "Tock" des nächsten Gegners. Stereo = Seite, deutlich höher = Gegner weiter oben,
+  deutlich tiefer = weiter unten, mit hellem Klick = auf deiner Linie (deine Angriffe treffen), schneller = näher,
+  leiser = Gegner hat weniger Energie. Bosse klopfen tiefer.
 - Angriffswarnung: zwei kurze, helle, harte Töne von der Seite eines nahen Gegners, der gerade angreift.
 - Gegner besiegt: fallender Dreiklang von seiner Seite.
 - Kampfbereich gesperrt: zwei tiefe harte Töne. Bereich frei: steigender Zweiklang.
 - Schaden: tiefes, quietschendes Rechteck. Heilung: steigender Ton. Unter 30 % Gesundheit: tiefer Doppelpuls alle 2,5 Sekunden.
 - Wand oder Grenze: Rauschen von der Seite (tief bei unten, etwas höher bei oben).
 - Abgrund in der Nähe: fallender Ton von der Seite.
+- Quietschendes Spielzeug direkt vor dir (Pattinsons Haus): heller Doppelpiep von der Seite.
 - Interaktion möglich: kurzer steigender Ton, danach die Ansage (zum Beispiel "Tür nach Downtown. X halten.").
 - Bereich einer Tür oder eines Objekts verlassen: kurzer fallender Ton.
 - Geld aufgesammelt: zwei helle Töne.
+Alle Töne hörst du mit Umschalt+F6 oder im Mod-Menü unter "Alle Töne anhören"; im Mod-Menü spielt außerdem jede
+Funktion ihren Ton vor.
 - Gegenstand oder Essen eingesammelt: drei helle Töne, danach die Ansage.
 - Gegenstand erschienen: kurzer steigender Ton von seiner Seite, danach die Ansage.
 - Ziel erreicht: steigender Gleitton.

@@ -141,6 +141,12 @@ namespace RCGAccess
             _pendingFrame = Time.frameCount;
         }
 
+        public static void OnNpcTalk(InteractEntity_QuestNPC npc, bool success)
+        {
+            Log.Write("Gespraech mit " + npc.name + (success ? "" : " (vom Spiel abgelehnt)") + ", Kampfsperre " + Combat.ScreenLockRunning);
+            if (Combat.ScreenLockRunning) Speech.Say(Loc.T("npc_fight"), true);
+        }
+
         public static void OnDialogReset(UI_DialogSystem ds)
         {
             try
@@ -303,6 +309,8 @@ namespace RCGAccess
                 }
             }
             if (parts.Count == 0) parts.Add(GameInfo.Readable(sel.name));
+            string suffix = PhoneHelp.FocusSuffix(sel);
+            if (suffix != null) parts.Add(suffix);
             return string.Join(", ", parts.ToArray());
         }
 

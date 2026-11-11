@@ -58,7 +58,8 @@ namespace RCGAccess
                 // stand well inside the area: centre for narrow areas, otherwise half a metre from its sides
                 float mx = b.size.x < 2f ? b.size.x * 0.5f : 0.5f;
                 float qx = Mathf.Clamp(from.x, b.min.x + mx, b.max.x - mx);
-                Vector3 q = new Vector3(qx, from.y, Mathf.Clamp(from.z, b.min.z, b.max.z));
+                float mz = b.size.z < 0.6f ? b.size.z * 0.5f : 0.3f; // a little inside the area, not on its edge
+                Vector3 q = new Vector3(qx, from.y, Mathf.Clamp(from.z, b.min.z + mz, b.max.z - mz));
                 float d = (q.x - from.x) * (q.x - from.x) + (q.z - from.z) * (q.z - from.z);
                 if (d < best) { best = d; point = q; found = true; }
             }

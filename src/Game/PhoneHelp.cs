@@ -261,6 +261,19 @@ namespace RCGAccess
             return null;
         }
 
+        /// <summary>Extra hint appended to the generic text of an entry (null for none).</summary>
+        public static string FocusSuffix(Component sel)
+        {
+            try
+            {
+                UI_StoreItemDisplayV2 st = sel.GetComponentInParent<UI_StoreItemDisplayV2>();
+                if (st != null && st.UseNowOpen) return Loc.T("shop_use_now");
+                if (sel.name.IndexOf("Save&Q", StringComparison.OrdinalIgnoreCase) >= 0) return Loc.T("save_hint");
+            }
+            catch { }
+            return null;
+        }
+
         private static int SlotNumber(UI_MenuScreen screen, Component sel)
         {
             try
@@ -303,6 +316,8 @@ namespace RCGAccess
         /// <summary>On/off switches, text speed and volume sliders of the game's settings: name plus the chosen value.</summary>
         private static string SettingText(Component sel)
         {
+            UI_MainSettingsSelector ms = sel.GetComponent<UI_MainSettingsSelector>();
+            if (ms != null) return MainSettingText(sel, ms);
             UI_SettingsSelector ss = sel.GetComponent<UI_SettingsSelector>();
             if (ss == null) ss = sel.GetComponentInChildren<UI_SettingsSelector>();
             if (ss == null || ss is UI_SettingsLanguage) return null;
@@ -352,6 +367,55 @@ namespace RCGAccess
             return label.Length > 0 ? label + ": " + value : value;
         }
 
+        /// <summary>Options of the title screen (other classes than the phone settings; on/off shown by highlight objects).</summary>
+        private static string MainSettingText(Component sel, UI_MainSettingsSelector ms)
+        {
+            string value;
+            GameObject onObj = null, offObj = null;
+            if (ms is UI_MainSettingsSubtitles || ms is UI_MainSettingsRumble)
+            {
+                bool v;
+                if (ms is UI_MainSettingsSubtitles)
+                {
+                    v = ((UI_MainSettingsSubtitles)ms).ShowSubtitles;
+                    onObj = UiReader.Traverse(ms, "_subtitlesOn") as GameObject; offObj = UiReader.Traverse(ms, "_subtitlesOff") as GameObject;
+                }
+                else
+                {
+                    v = ((UI_MainSettingsRumble)ms).RumbleOn;
+                    onObj = UiReader.Traverse(ms, "_rumbleObjOn") as GameObject; offObj = UiReader.Traverse(ms, "_rumbleObjOff") as GameObject;
+                }
+                value = Loc.T(v ? "on" : "off");
+                GameObject chosen = v ? onObj : offObj;
+                if (chosen != null)
+                {
+                    TMP_Text ct = chosen.GetComponentInChildren<TMP_Text>(true);
+                    if (ct != null && GameInfo.Clean(ct.text).Length > 0) value = GameInfo.Clean(ct.text);
+                }
+            }
+            else if (ms is UI_MainSettingsTextSpeed)
+                value = Loc.T("speed_" + (int)((UI_MainSettingsTextSpeed)ms).TextSpeed);
+            else if (ms is UI_MainSettingsSlider)
+            {
+                UnityEngine.UI.Slider sl = UiReader.Traverse(ms, "_slider") as UnityEngine.UI.Slider;
+                if (sl == null) return null;
+                float range = sl.maxValue - sl.minValue;
+                value = (range > 0 ? Mathf.RoundToInt((sl.value - sl.minValue) / range * 100f) : 0) + " %";
+            }
+            else return null;
+            // the name is the first text of the entry (the on/off words follow it)
+            string label = "";
+            foreach (TMP_Text t in sel.GetComponentsInChildren<TMP_Text>(false))
+            {
+                if (!t.isActiveAndEnabled) continue;
+                if (onObj != null && t.transform.IsChildOf(onObj.transform)) continue;
+                if (offObj != null && t.transform.IsChildOf(offObj.transform)) continue;
+                string c = GameInfo.Clean(t.text);
+                if (c.Length > 0) { label = c; break; }
+            }
+            return label.Length > 0 ? label + ": " + value : value;
+        }
+
         // ---------------- shop ----------------
         private static bool _storeOpen;
         private static float _storeOpenAt = -1f;
@@ -360,7 +424,22 @@ namespace RCGAccess
         public static void OnStoreOpened() { _storeOpen = true; _storeOpenAt = Time.realtimeSinceStartup; _storeMoney = -1f; Log.Write("Laden geoeffnet"); }
         public static void OnStoreLeft() { _storeOpen = false; _storeMoney = -1f; Log.Write("Laden verlassen"); }
 
-        /// <summary>Says the money when a shop opens and what is left after buying.</summary>
+        public static bool StoreOpen { get { return _storeOpen; } }
+        private static string _storeNote;
+        private static float _storeNoteAt;
+        private static float _idleSince = -1f;
+
+        /// <summary>Money text for the shop (right stick right / F5 in a shop).</summary>
+        public static string StoreMoneyText()
+        {
+            RCG.Player p = GameInfo.Player;
+            float m = p != null ? Combat.Money(p) : -1f;
+            return m >= 0 ? Loc.T("shop_money", Combat.FormatMoney(m)) : "";
+        }
+
+        /// <summary>Says the money when a shop opens and what is left after buying. The game re-reads the focused entry
+        /// right after opening and after every purchase, which would cut an announcement off, so the money is said as soon
+        /// as speech has been quiet for a moment.</summary>
         private static void UpdateStore(float now)
         {
             if (!_storeOpen) return;
@@ -373,18 +452,24 @@ namespace RCGAccess
             if (_storeMoney < 0)
             {
                 _storeMoney = m;
-                string s = Loc.T("shop_money", Combat.FormatMoney(m));
-                Log.Text("Laden", s);
-                Speech.Say(s, false);
+                _storeNote = Loc.T("shop_money", Combat.FormatMoney(m)) + " " + Loc.T("shop_keys");
+                _storeNoteAt = now;
             }
             else if (m < _storeMoney - 0.001f)
             {
                 _storeMoney = m;
-                string s = Loc.T("shop_left", Combat.FormatMoney(m));
-                Log.Text("Laden", s);
-                Speech.Say(s, false);
+                _storeNote = Loc.T("shop_left", Combat.FormatMoney(m));
+                _storeNoteAt = now;
             }
             else if (m > _storeMoney) _storeMoney = m;
+            if (_storeNote == null) return;
+            if (Speech.IsSpeaking) { _idleSince = -1f; return; }
+            if (_idleSince < 0) _idleSince = now;
+            if (now - _idleSince < 0.25f && now - _storeNoteAt < 6f) return;
+            Log.Text("Laden", _storeNote);
+            Speech.Say(_storeNote, false);
+            _storeNote = null;
+            _idleSince = -1f;
         }
 
         // ---------------- phone pages ----------------

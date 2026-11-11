@@ -105,12 +105,27 @@ namespace RCGAccess
             A("m_tonevol_help", "Lautstärke aller Töne außer dem Gegner-Klopfen. Jede Änderung spielt den Peilton vor.", "Volume of all tones except the enemy knock. Each change plays the beacon.");
             A("m_padkeys", "Mod-Funktionen am Controller", "Mod functions on the controller");
             A("m_padkeys_help", "Rechten Stick kurz drücken: Hinführen zum Ziel. Rechten Stick halten: Peilton an oder aus. Rechter Stick hoch und runter: Ziel wechseln. Rechter Stick links: Raum und Ausgänge. Rechter Stick rechts: Status. Den linken Stick drücken benutzt das Spiel für die Verhöhnung.", "Press right stick briefly: guide me to the target. Hold right stick: beacon on or off. Right stick up and down: change target. Right stick left: room and exits. Right stick right: status. The game uses the left stick press for taunting.");
+            A("guard_keys", "Pattinson, Schlüssel nehmen", "Pattinson, take the keys");
+            A("toys_room", "Pattinson schläft. Auf dem Boden liegt quietschendes Spielzeug, {0} Stück. Trittst du darauf, wacht er auf und wirft dich raus. Hinführen geht um das Spielzeug herum; bei Spielzeug vor dir piept es hell. Bei Pattinson X halten, um die Schlüssel zu nehmen.", "Pattinson is asleep. There are {0} squeaky toys on the floor. Step on one and he wakes up and throws you out. Guiding walks around the toys; a toy in front of you beeps brightly. Hold X at Pattinson to take the keys.");
+            A("toy_warn", "Vorsicht, Spielzeug {0}", "Careful, toy {0}");
+            A("m_menusamples", "Töne im Mod-Menü vorspielen", "Play sounds in the mod menu");
+            A("m_menusamples_help", "Steht die Auswahl im Mod-Menü auf einer Funktion mit eigenem Ton, spielt der Mod diesen Ton nach der Ansage vor, damit du ihn lernst.", "When the mod menu selection is on a feature with its own sound, the mod plays that sound after the announcement so you can learn it.");
+            A("m_tonetest", "Alle Töne anhören", "Listen to all sounds");
+            A("m_tonetest_help", "Spielt alle Töne des Mods nacheinander mit Erklärung, wie Umschalt+F6 im Spiel.", "Plays all sounds of the mod in a row with explanations, like Shift+F6 in the game.");
+            A("m_linetone", "Heller Klick, wenn ein Gegner auf deiner Linie ist", "Bright click when an enemy is on your line");
+            A("m_linetone_help", "Das Klopfen des nächsten Gegners bekommt einen hellen Klick, wenn er auf gleicher Höhe steht wie du, also weder weiter oben noch weiter unten. Dann treffen deine Angriffe. Steht er höher, klopft es deutlich höher, steht er tiefer, deutlich tiefer.", "The knock of the nearest enemy gets a bright click when it stands on your line, neither further up nor further down. Then your attacks hit. If it stands higher, the knock is clearly higher; lower, clearly lower.");
             A("m_walkrun", "Beim Hinführen rennen", "Run while guiding");
             A("m_walkrun_help", "Auf langen geraden Strecken rennt die Figur beim Hinführen, das spart Zeit. Kurz vor dem Ziel geht sie wieder.", "On long straight stretches the character runs while guiding, which saves time. Close to the goal it walks again.");
             A("m_autodoor", "Türen nach dem Hinführen öffnen", "Open doors after guiding");
             A("m_autodoor_help", "Führt dich das Hinführen zu einer offenen Tür, hält der Mod X für dich und du gehst direkt in den nächsten Raum. Bewegst du den linken Stick, bricht das ab.", "When guiding brings you to an open door, the mod holds X for you and you walk straight into the next room. Moving the left stick cancels it.");
             A("door_auto", "{0}, gehe hindurch.", "{0}, going through.");
             A("shop_money", "Dein Geld: {0} Dollar.", "Your money: {0} dollars.");
+            A("npc_no", "Die Person reagiert gerade nicht. Versuch es gleich noch einmal.", "The person does not react right now. Try again in a moment.");
+            A("npc_fight", "Während eines Kampfes redet hier niemand mit dir. Erst alle Gegner besiegen.", "Nobody talks to you during a fight. Defeat all enemies first.");
+            A("save_hint", "Achtung: Das Spiel speichert nur beim Betreten eines Raums. Was du seitdem gemacht hast, etwa Einkäufe, geht beim Beenden verloren. Wechsle vorher einmal den Raum.", "Note: the game only saves when you enter a room. What you did since, such as purchases, is lost when quitting. Change rooms once before.");
+            A("door_came", "Du stehst noch in der Tür, durch die du gekommen bist. Geh erst ein Stück weg, dann bringt dich X halten zurück.", "You are still standing in the door you came through. Step away first, then holding X takes you back.");
+            A("shop_keys", "Rechter Stick rechts sagt dein Geld.", "Right stick right says your money.");
+            A("shop_use_now", "A isst es sofort, B legt es ins Inventar.", "A eats it now, B puts it in your inventory.");
             A("shop_left", "Noch {0} Dollar.", "{0} dollars left.");
             A("shop_expensive", "zu teuer", "too expensive");
             A("speed_1", "langsam", "slow");
@@ -253,8 +268,7 @@ namespace RCGAccess
             A("quest_at", "{0}, Ort: {1}", "{0}, location: {1}");
 
             A("rate", "Tempo {0}", "Rate {0}");
-            A("tonetest", "Tontest. Peilton rechts zu einem Ausgang, dann Peilton links und oben. Gegner-Klopfen links, zuletzt schwächer. Angriffswarnung. Schaden. Heilung. Abgrund. Wand. Interaktion. Geld.",
-                "Tone test. Beacon right to an exit, then beacon left and up. Enemy knock left, last one weaker. Attack warning. Damage. Healing. Drop. Wall. Interaction. Money.");
+            A("tonetest", "Alle Töne. Peilton zu einem Ausgang rechts, Peilton zum Ausgang Richtung Aufgabe links oben, Ziel erreicht. Gegner-Klopfen: auf deiner Linie mit Klick, oberhalb, unterhalb, schwacher Gegner. Angriffswarnung. Schaden, Heilung, wenig Leben. Gegner besiegt, Kampfbereich gesperrt, Kampfbereich frei. Abgrund. Spielzeug vor dir. Wand. Interaktion möglich, Bereich verlassen. Eingesammelt. Geld.", "All sounds. Beacon to an exit on the right, beacon to the exit toward the quest up left, target reached. Enemy knock: on your line with click, above, below, weak enemy. Attack warning. Damage, healing, low health. Enemy defeated, fight area locked, fight area cleared. Pit. Toy in front of you. Wall. Interaction possible, leaving the area. Picked up. Money.");
             A("protocol_saved", "Szenen-Protokoll gespeichert.", "Scene log saved.");
             // 0.1.1
             A("menu_updated", "RCGAccess wurde aktualisiert. Im Mod-Menü gibt es neue Einträge. Speichern und schließen setzt das Spiel fort.", "RCGAccess was updated. The mod menu has new entries. Save and close continues the game.");
