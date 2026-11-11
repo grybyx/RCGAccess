@@ -1,5 +1,12 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.1.8
+Version 0.1.9
+
+New in version 0.1.9
+- Beacon: if guiding switched the beacon on, it goes off again when guiding ends. It only stays on if you switched it on
+  yourself (hold the right stick or F8).
+- The beacon is silent while an enemy is closer than about 4 meters; the enemy knock has priority.
+- Guiding does not start at all with an enemy nearby: "Enemy nearby, fight first."
+- Phone, area map: after A on an area, the area, your location, mission goals and visited rooms are announced.
 
 New in version 0.1.8
 - Rewards (e.g. after a boss): every reward is announced completely ("1000 experience", "100 dollars",
@@ -69,7 +76,7 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.1.8 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.1.9 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
 Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and at least one SAPI voice

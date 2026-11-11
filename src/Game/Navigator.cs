@@ -87,6 +87,7 @@ namespace RCGAccess
         private static string _selRoom;
         private static float _nextBuild;
         private static bool _beacon;
+        private static bool _beaconByWalk; // beacon was switched on only for guided walking
         private static float _nextBeep;
         private static bool _arrivedSaid;
         private static Component _arrivedObj;
@@ -478,6 +479,7 @@ namespace RCGAccess
         public static void ToggleBeacon()
         {
             _beacon = !_beacon;
+            _beaconByWalk = false;
             if (_beacon)
             {
                 if (_targets.Count == 0) BuildTargets();
@@ -574,7 +576,9 @@ namespace RCGAccess
                 {
                     if (dist > 2f) _arrivedSaid = false;
                     if (dist > 4f && _arrivedObj == t.Obj) _arrivedObj = null;
-                    if (now >= _nextBeep)
+                    // the beacon pauses while an enemy is close (the enemy knock has priority), unless guiding to a beggar
+                    bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestEnemyDist < 4.5f && t.Kind != Kind.Beggar;
+                    if (now >= _nextBeep && !enemyClose)
                     {
                         _nextBeep = now + Mathf.Lerp(0.2f, 1.2f, Mathf.Clamp01(dist / 30f));
                         Beep(pp, t.Pos, t.Kind, t.QuestRoute);
@@ -716,6 +720,7 @@ namespace RCGAccess
             Target t = Current;
             RCG.Player p = GameInfo.Player;
             if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
+            if (Settings.AutoWalkStopForEnemies && Combat.NearestEnemyDist < 4.5f && t.Kind != Kind.Beggar) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
             _walkTarget = t;
             AutoWalk = true;
             _walkStart = Time.realtimeSinceStartup;
@@ -726,7 +731,7 @@ namespace RCGAccess
             _stuckPos = p.transform.position;
             _stuckMode = 0;
             _pushUntil = 0;
-            if (!_beacon) { _beacon = true; }
+            if (!_beacon) { _beacon = true; _beaconByWalk = true; }
             Speech.Say(Loc.T("walk_on", t.Label(), GameInfo.Direction(p.transform.position, t.Pos)), true);
         }
 
@@ -735,6 +740,8 @@ namespace RCGAccess
             AutoWalk = false;
             _walkTarget = null;
             _path.Clear();
+            // a beacon that only came on for guiding goes off with it
+            if (_beaconByWalk) { _beacon = false; _beaconByWalk = false; }
             if (say != null) Speech.Say(say, true);
         }
 

@@ -17,6 +17,7 @@ namespace RCGAccess
         private static float _pageAt = -1f;
         private static bool _openedNow;
         private static bool _extWasOpen;
+        private static bool _extFirst;
         private static int _extIdx = -1;
         private static float _extAt = -1f;
         private static bool _questWasOpen;
@@ -190,7 +191,7 @@ namespace RCGAccess
         {
             try
             {
-                if (sel == null || UI_PhoneManager.instance == null || !UI_PhoneManager.instance.Open) return null;
+                if (sel == null) return null;
                 UI_PhoneScreen_MapV2 map = sel.GetComponentInParent<UI_PhoneScreen_MapV2>();
                 if (map != null)
                 {
@@ -363,13 +364,13 @@ namespace RCGAccess
                 _map = map;
                 bool ext = UI_PhoneScreen_MapV2._mapOpen;
                 int idx = UiReader.Traverse(map, "_currentExtendedMap") is int ? (int)UiReader.Traverse(map, "_currentExtendedMap") : -1;
-                if (ext && (!_extWasOpen || idx != _extIdx)) { _extAt = now; _extIdx = idx; }
+                if (ext && !_extWasOpen) { _extWasOpen = true; _extFirst = true; _extIdx = idx; _extAt = now; }
+                else if (ext && idx != _extIdx) { _extIdx = idx; _extAt = now; }
                 if (ext && _extAt > 0 && now - _extAt > 0.4f && !UI_PhoneScreen_MapV2._mapAnimating)
                 {
-                    bool first = !_extWasOpen;
                     _extAt = -1f;
-                    _extWasOpen = true;
-                    SpeakWorldMap(map, idx, first);
+                    SpeakWorldMap(map, idx, _extFirst);
+                    _extFirst = false;
                 }
                 if (!ext) { _extWasOpen = false; _extAt = -1f; }
                 bool qOpen = UiReader.Traverse(map, "_questOpen") is bool && (bool)UiReader.Traverse(map, "_questOpen");

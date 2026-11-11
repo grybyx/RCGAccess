@@ -4,7 +4,7 @@
 
 RCGAccess macht das Beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) für blinde und sehbehinderte Spielerinnen und Spieler spielbar. Der Mod liest Menüs, Dialoge und Einblendungen mit einer SAPI-Stimme in der Sprache des Spiels vor. Dazu kommen Orientierungstöne für Gegner, Ausgänge, Gegenstände und Gesundheit sowie ein Navigator, der dich zu Türen und Zielen führt.
 
-> **Vorabversion (Beta), 0.1.8.** Getestet ist das Spiel bis einschließlich zum ersten Endgegner. Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
+> **Vorabversion (Beta), 0.1.9.** Getestet ist das Spiel bis einschließlich zum ersten Endgegner. Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
 
 Nur für **River City Girls** (2019). River City Girls Zero und River City Girls 2 werden nicht unterstützt.
 
@@ -88,7 +88,7 @@ Nach dem Spielen `RCGAccess_Daten_sammeln.bat` im Spielordner starten. Die Datei
 
 RCGAccess makes the beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) playable for blind and visually impaired players. The mod reads menus, dialogs and pop-ups with a SAPI voice in the game's language. It adds orientation sounds for enemies, exits, items and health, and a navigator that guides you to doors and goals.
 
-> **Pre-release (beta), 0.1.8.** Tested up to and including the first boss. Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
+> **Pre-release (beta), 0.1.9.** Tested up to and including the first boss. Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
 
 Only for **River City Girls** (2019). River City Girls Zero and River City Girls 2 are not supported.
 

@@ -1,5 +1,12 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.1.8
+Version 0.1.9
+
+Neu in Version 0.1.9
+- Peilton: Schaltet das Hinführen den Peilton ein, geht er mit dem Ende des Hinführens wieder aus. Er bleibt nur an,
+  wenn du ihn selbst eingeschaltet hast (rechten Stick halten oder F8).
+- Ist ein Gegner näher als etwa 4 Meter, schweigt der Peilton; das Klopfen des Gegners hat Vorrang.
+- Hinführen bei nahem Gegner startet gar nicht erst: "Gegner in der Nähe, erst kämpfen."
+- Handy, Gebietskarte: Nach A auf einem Gebiet werden Gebiet, Standort, Missionsziele und besuchte Räume angesagt.
 
 Neu in Version 0.1.8
 - Belohnungen (zum Beispiel nach dem Endgegner): jede Belohnung wird vollständig angesagt ("1000 Erfahrung",
@@ -100,7 +107,7 @@ INSTALLATION
    Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
 2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
    das kann ein paar Sekunden länger dauern.
-3. Beim ersten Start sagt der Mod "RCGAccess 0.1.8 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.1.9 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
    Erst mit "Speichern und schließen" geht es ins Spiel.
 
 Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und mindestens eine

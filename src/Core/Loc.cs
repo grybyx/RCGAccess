@@ -225,6 +225,7 @@ namespace RCGAccess
             A("walk_on", "Hinführen zu {0}, {1}. Bewege den linken Stick, um selbst zu steuern.", "Guiding to {0}, {1}. Move the left stick to take over.");
             A("walk_off", "Hinführen beendet.", "Guiding stopped.");
             A("walk_manual", "Hinführen beendet, du steuerst selbst.", "Guiding stopped, you are steering.");
+            A("walk_enemy_no", "Gegner in der Nähe, erst kämpfen. Hinführen geht danach.", "Enemy nearby, fight first. Guiding works afterwards.");
             A("walk_enemy", "Hinführen angehalten, Gegner in der Nähe.", "Guiding paused, enemy nearby.");
             A("walk_lost", "Ziel verloren.", "Target lost.");
             A("walk_blocked", "Weg blockiert. Ziel {0}.", "Way blocked. Target {0}.");
