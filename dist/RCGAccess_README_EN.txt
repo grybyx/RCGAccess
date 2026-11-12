@@ -1,5 +1,36 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.3.0
+Version 0.3.5
+
+New in version 0.3.5
+- New speech output choice in the mod menu (second entry "Speech output"), built with Prism by Ethin Probst:
+  - OneCore, Windows voices (default, recommended): the modern Windows voices such as Microsoft Zira or David.
+  - SAPI: the classic SAPI voices as before, including 32-bit voices such as Eloquence.
+  - Screen reader: your running screen reader (NVDA, JAWS, ZDSR, System Access, ZoomText and others) speaks with its
+    own voice and rate, and texts also appear on the braille display. If no screen reader is running, OneCore speaks
+    and the mod tells you so.
+- The choice applies immediately, you hear the new output right in the menu.
+- The German and English voice are remembered separately for OneCore and SAPI.
+- The mod menu opens once by itself on the next start because of the new entry.
+
+New in version 0.3.4
+- Arrival door: the guard against unwanted going back now also works when the game offers the door right as you appear
+  (mall: shops and food court).
+- "Way blocked" at locked doors or fight areas now says "Way closed … closed for now, usually until all enemies are
+  defeated or the story opens it".
+
+New in version 0.3.3
+- Guiding can now jump onto furniture and steps when the way leads over them (e.g. in Pattinson's house over the couch
+  and shelves to Pattinson, or onto the step in front of the backyard door). It still prefers walking around low obstacles.
+- Pattinson's house: after taking the keys there are no more toy warnings and jumps.
+
+New in version 0.3.2
+- Pattinson's house: the squeaky spots run across the room, you have to jump over them. Guiding looks for the narrowest
+  place, takes a run-up and jumps by itself (A). Jump yourself with A; the warning now says "Careful, toy …, jump over it with A".
+
+New in version 0.3.1
+- Pattinson's house: the squeaky spots are long diagonal strips. The mod now checks their real shape instead of a rough
+  rectangle; guiding finds the way between them, and "Careful, toy" only comes when a spot really lies in front of you.
+  The last bit to the goal never cuts across such a spot.
 
 New in version 0.3.0
 - Learning the sounds: in the mod menu every feature with its own sound plays that sound after the announcement
@@ -142,11 +173,12 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.3.0 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.3.5 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
-Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and at least one SAPI voice
-in the game language. The mod always speaks the game language with a matching voice; languages without
+Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and a voice in the game language:
+a Windows voice for OneCore (Settings, Time & language, Speech), or a SAPI voice for SAPI. With the setting
+Screen reader, your screen reader speaks. The mod always speaks the game language with a matching voice; languages without
 mod texts get English mod texts.
 
 

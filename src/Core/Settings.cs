@@ -10,7 +10,7 @@ namespace RCGAccess
     /// <summary>All switches and values of the mod (RCGAccess\RCGAccess.ini).</summary>
     public static class Settings
     {
-        public const int CurrentMenuVersion = 6;
+        public const int CurrentMenuVersion = 7;
 
         // Funktionen
         public static bool Menus = true;
@@ -43,8 +43,11 @@ namespace RCGAccess
 
         // Werte
         public static int ModLang = 0;          // 0 automatisch, 1 Deutsch, 2 English
-        public static string VoiceDe = "";
+        public static int SpeechEngine = 0;     // 0 OneCore (Prism), 1 SAPI, 2 Screenreader (Prism)
+        public static string VoiceDe = "";      // SAPI
         public static string VoiceEn = "";
+        public static string VoiceDeOneCore = "";
+        public static string VoiceEnOneCore = "";
         public static int Rate = 2;
         public static int SpeechVolume = 100;
         public static int ToneVolume = 70;

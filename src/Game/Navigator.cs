@@ -204,6 +204,7 @@ namespace RCGAccess
         {
             _sceneAt = Time.realtimeSinceStartup;
             _cameDoor = null; _cameDone = false; _cameSaid = false; _cameHeldSince = -1f; _spawnKnown = false;
+            PathGrid.OnSceneLoaded();
             try
             {
                 if (_lastDoorInRange != null && !string.IsNullOrEmpty(_scene)) ForgetLocked(_scene, _lastDoorInRange);
@@ -757,6 +758,26 @@ namespace RCGAccess
 
         public static List<Collider> Toys { get { return _toys; } }
 
+        private static bool KeysTaken(Quest_MallEntrance_SecurityGuard g)
+        {
+            try
+            {
+                RCG_Event ev = UiReader.Traverse(g, "_keysCollectedEvent") as RCG_Event;
+                return ev != null && EventManager.instance != null && EventManager.instance.GetEventCalled(ev);
+            }
+            catch { return false; }
+        }
+
+        private static bool StraightIsSafe(Vector3 a, Vector3 b)
+        {
+            for (int i = 1; i <= 10; i++)
+            {
+                Vector3 p = Vector3.Lerp(a, b, i / 10f);
+                if (PathGrid.ToyNear(p, 0.4f, 0.1f)) return false;
+            }
+            return true;
+        }
+
         private static void UpdateToys(Vector3 pp, float now)
         {
             if (now >= _nextToyScan || _toyScene != GameInfo.SceneName)
@@ -772,7 +793,9 @@ namespace RCGAccess
                             if (c.enabled && c.gameObject.activeInHierarchy) _toys.Add(c);
                 }
                 catch { }
-                if (first && _toys.Count > 0 && UnityEngine.Object.FindObjectOfType<Quest_MallEntrance_SecurityGuard>() != null)
+                Quest_MallEntrance_SecurityGuard guard = UnityEngine.Object.FindObjectOfType<Quest_MallEntrance_SecurityGuard>();
+                if (guard != null && KeysTaken(guard)) _toys.Clear(); // the guard cannot wake up any more
+                if (first && _toys.Count > 0 && guard != null)
                 {
                     Log.Write("Spielzeug im Raum: " + _toys.Count);
                     Speech.Say(Loc.T("toys_room", _toys.Count), false);
@@ -782,10 +805,13 @@ namespace RCGAccess
             foreach (Collider c in _toys)
             {
                 if (c == null) continue;
-                Vector3 cp = c.bounds.ClosestPoint(pp);
+                Bounds tb = c.bounds;
+                Vector3 q = new Vector3(pp.x, Mathf.Clamp(0.02f, tb.min.y, tb.max.y), pp.z);
+                Vector3 cp;
+                try { cp = c.ClosestPoint(q); } catch { cp = tb.ClosestPoint(q); }
                 float dx = cp.x - pp.x, dz = cp.z - pp.z;
                 // the feet are about 70 cm wide: warn when a toy is within reach of the next steps
-                if (Mathf.Abs(dx) > 1.1f || Mathf.Abs(dz) > 0.5f) continue;
+                if (Mathf.Abs(dx) > 1.0f || Mathf.Abs(dz) > 0.4f) continue;
                 int id = c.GetInstanceID();
                 float last;
                 if (_hazardWarned.TryGetValue(id, out last) && now - last < 1.5f) continue;
@@ -793,7 +819,7 @@ namespace RCGAccess
                 float pan = Combat.StrongPan(dx);
                 Speech.Tone(1400, 40, pan, 0.6f, 0, 2100, 0);
                 Speech.Tone(1400, 40, pan, 0.6f, 0, 2100, 90);
-                if (now - _toySpeechAt > 4f)
+                if (now - _toySpeechAt > 4f && !AutoWalk)
                 {
                     _toySpeechAt = now;
                     string where = Mathf.Abs(dx) >= Mathf.Abs(dz) * 2f ? GameInfo.SideWord(dx) : Loc.T(dz > 0 ? "dir_up" : "dir_down");
@@ -824,7 +850,7 @@ namespace RCGAccess
                 // the door the player came through: the player spawns inside its area
                 RCG.Player cp = GameInfo.Player;
                 if (door != null && !_cameDone && _cameDoor == null && Time.realtimeSinceStartup - _sceneAt < 8f
-                    && cp != null && _spawnKnown && Vector3.Distance(cp.transform.position, _spawnPos) < 2.5f)
+                    && cp != null && (!_spawnKnown || Vector3.Distance(cp.transform.position, _spawnPos) < 2.5f))
                 {
                     _cameDoor = door;
                     Log.Write("Ankunftstuer: " + door.name + " (X dort gesperrt, bis der Bereich verlassen wird)");
@@ -918,12 +944,17 @@ namespace RCGAccess
         private static float _traceAt;
         private static int _failProtocols;
 
+        private static string _mapScene;
+
         private static void Plan(RCG.Player p, Vector3 from, Vector3 to)
         {
             _path.Clear();
             _pathIdx = 0;
             PathGrid.Ignore = _walkTarget != null && _walkTarget.Obj != null ? _walkTarget.Obj.transform : null;
+            bool map = _toys.Count > 0 && _mapScene != GameInfo.SceneName;
+            if (map) { _mapScene = GameInfo.SceneName; PathGrid.RequestMap(); }
             List<Vector3> grid = PathGrid.Find(p, from, to);
+            if (map && PathGrid.LastMap != null) Log.Write(PathGrid.LastMap);
             if (grid != null && grid.Count > 0)
             {
                 _path.AddRange(grid);
@@ -958,6 +989,8 @@ namespace RCGAccess
         }
 
         public static bool WalkRun;
+        public static bool WalkJump;
+        private static float _lastJumpAt = -10f;
         private static InteractEntity _autoEnterDoor;
         private static float _autoEnterUntil;
 
@@ -1082,12 +1115,44 @@ namespace RCGAccess
             bool interactTarget = (t.Kind == Kind.Exit && !t.IsEdge && t.Door != null)
                 || ((t.Kind == Kind.Person || t.Kind == Kind.Shop || t.Kind == Kind.Thing) && t.Obj is InteractEntity && !(t.Obj is PickupObject));
             bool doorFinal = interactTarget && _pathIdx >= _path.Count - 1 && Mathf.Abs(gdx) < 1.5f && Mathf.Abs(gdz) < 2f;
+            if (doorFinal && _toys.Count > 0 && !StraightIsSafe(pos, goal)) doorFinal = false; // never cut across squeaky floor
             if (doorFinal) { dx = gdx; dz = gdz; }
             h = Mathf.Abs(dx) > 0.12f ? (dx > 0 ? 1 : -1) : 0;
             v = Mathf.Abs(dz) > 0.08f ? (dz > 0 ? 1 : -1) : 0;
             // run on long horizontal stretches (the game only runs sideways)
             float gdist = Mathf.Sqrt(gdx * gdx + gdz * gdz);
             WalkRun = Settings.WalkRun && h != 0 && Mathf.Abs(dx) > 1.6f && gdist > 3f && !beggar && t.Kind != Kind.Item;
+            // squeaky floor in the way: jump over it (the path finder only crosses it where it has to, at its narrowest)
+            // furniture or a step in the way that the path goes over: jump onto it
+            WalkJump = false;
+            if (h != 0 || v != 0)
+            {
+                bool airborne = p.Fsm != null && (p.Fsm.IsCurrentState<PlayerJump>() || p.Fsm.IsCurrentState<PlayerFall>());
+                Vector3 near = pos + new Vector3(h * 0.5f, 0, v * 0.3f);
+                if (!airborne && now - _lastJumpAt > 0.9f)
+                {
+                    float top = PathGrid.SurfaceY(near.x, near.z, pos.y);
+                    if (!float.IsNaN(top) && top > pos.y + 0.3f)
+                    {
+                        WalkJump = true;
+                        _lastJumpAt = now;
+                        Log.Write("Sprung auf Moebel/Stufe bei " + pos.ToString("F2") + " Hoehe " + (top - pos.y).ToString("F2"));
+                    }
+                }
+                if (!WalkJump && _toys.Count > 0 && pos.y < 0.4f)
+                {
+                    bool onToy = PathGrid.ToyNear(pos, 0.3f, 0.06f);
+                    Vector3 far = pos + new Vector3(h * 1.6f, 0, v * 0.6f);
+                    bool toyNear = PathGrid.ToyNear(near, 0.3f, 0.06f);
+                    if (!airborne && h != 0 && PathGrid.ToyNear(far, 0.3f, 0.06f)) WalkRun = Settings.WalkRun; // take a run-up
+                    if (!airborne && !onToy && toyNear && now - _lastJumpAt > 0.9f)
+                    {
+                        WalkJump = true;
+                        _lastJumpAt = now;
+                        Log.Write("Sprung ueber Quietschboden bei " + pos.ToString("F2") + " Richtung " + h + "/" + v + (WalkRun ? " rennend" : ""));
+                    }
+                }
+            }
 
             // stuck handling
             if (Vector3.Distance(pos, _stuckPos) > 0.25f) { _stuckPos = pos; _stuckSince = now; }
@@ -1104,8 +1169,13 @@ namespace RCGAccess
                 if (st > 4f)
                 {
                     Log.Write("Hinfuehren blockiert bei " + pos.ToString("F2") + ", Ziel " + goal.ToString("F2") + ", roh " + t.RawPos.ToString("F2"));
+                    PathGrid.RequestMap();
+                    PathGrid.Find(p, pos, goal);
+                    if (PathGrid.LastMap != null) Log.Write(PathGrid.LastMap);
                     if (_failProtocols++ < 3) Geometry.Protocol("Hinfuehren blockiert", false);
-                    StopWalk(Loc.T("walk_blocked", GameInfo.Direction(pos, goal)));
+                    // a locked door or a fight area: the way is closed for now, not a problem of the path
+                    bool closedNow = t.Locked || Combat.ScreenLockRunning || Combat.NearestHostileDist < 12f;
+                    StopWalk(closedNow ? Loc.T("walk_blocked_closed", GameInfo.Direction(pos, goal)) : Loc.T("walk_blocked", GameInfo.Direction(pos, goal)));
                     return false;
                 }
                 if (st > 1.0f && now >= _replanAt - 1.0f) _replanAt = now; // replan now and then while stuck

@@ -27,35 +27,142 @@ namespace RCGAccess
             return m;
         }
 
-        public static void OnSceneLoaded() { _mask = -1; }
+        public static void OnSceneLoaded() { _mask = -1; _tris.Clear(); }
 
         private static float _inflate = 1f;
+
+        private static bool _wantMap;
+        public static string LastMap;
+
+        /// <summary>Makes the next search write a text map of its grid (for the room protocol when guiding is blocked).</summary>
+        public static void RequestMap() { _wantMap = true; LastMap = null; }
 
         /// <summary>Object the path leads to (never an obstacle for its own path).</summary>
         public static Transform Ignore;
 
-        private static bool Blocked(Vector3 c, int mask)
+        /// <summary>Height the player stands on while planning (cells are checked relative to it).</summary>
+        private static float _base;
+        private static readonly RaycastHit[] _rays = new RaycastHit[24];
+
+        private static bool Counts(Collider h)
+        {
+            if (h == null) return false;
+            if (h.GetComponentInParent<CombatEntity>() != null) return false;
+            if (Ignore != null && h.transform.IsChildOf(Ignore)) return false;
+            PickupObject po = h.GetComponentInParent<PickupObject>();
+            if (po != null && !(po is Weapon_TwoHandedOverhead)) return false; // small pickups do not block
+            return true;
+        }
+
+        private static bool BodyBlocked(Vector3 c, float y, int mask)
         {
             // the player's feet are about 70 cm wide and 10 cm deep; inflate by half a cell so walls between cells are found
             Vector3 half = new Vector3(0.35f * _inflate + Cell * 0.5f, 0.35f, 0.05f + Cell * 0.5f * _inflate);
-            // squeaky toys (triggers) must never be stepped on
+            int n = Physics.OverlapBoxNonAlloc(new Vector3(c.x, y, c.z), half, _hits, Quaternion.identity, mask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++) if (Counts(_hits[i])) return true;
+            return false;
+        }
+
+        /// <summary>Highest walkable surface at x/z that a jump from the given height can reach (furniture, steps);
+        /// float.NaN if there is none.</summary>
+        public static float SurfaceY(float x, float z, float from, int mask)
+        {
+            int n = Physics.RaycastNonAlloc(new Vector3(x, from + 2.2f, z), Vector3.down, _rays, 4.5f, mask, QueryTriggerInteraction.Ignore);
+            float best = float.NaN;
+            for (int i = 0; i < n; i++)
+            {
+                if (!Counts(_rays[i].collider)) continue;
+                float y = _rays[i].point.y;
+                if (y > from + 2.0f) continue;
+                if (float.IsNaN(best) || y > best) best = y;
+            }
+            return best;
+        }
+
+        public static float SurfaceY(float x, float z, float from) { return SurfaceY(x, z, from, _mask != -1 ? _mask : ~0); }
+
+        /// <summary>0 free, 2 blocked, 4 a platform (furniture, step) the player has to jump onto.</summary>
+        private static byte CellState(Vector3 c, int mask)
+        {
+            if (!BodyBlocked(c, _base + 0.5f, mask)) return 0;
+            // something at body height: maybe the top of a piece of furniture one can jump onto
+            float top = SurfaceY(c.x, c.z, _base, mask);
+            if (float.IsNaN(top) || top < _base + 0.3f) return 2;
+            if (BodyBlocked(c, top + 0.55f, mask)) return 2; // no room on top (wall, shelf above)
+            return 4;
+        }
+
+        /// <summary>True if squeaky floor lies within mx (sideways) and mz (depth) of p.</summary>
+        public static bool ToyNear(Vector3 p, float mx, float mz)
+        {
             List<Collider> toys = Navigator.Toys;
             for (int i = 0; i < toys.Count; i++)
             {
-                if (toys[i] == null) continue;
-                Bounds tb = toys[i].bounds;
-                if (Mathf.Abs(c.x - tb.center.x) < half.x + tb.extents.x + 0.1f && Mathf.Abs(c.z - tb.center.z) < half.z + tb.extents.z + 0.1f) return true;
+                Collider t = toys[i];
+                if (t == null) continue;
+                Bounds b = t.bounds;
+                if (p.x < b.min.x - mx || p.x > b.max.x + mx || p.z < b.min.z - mz || p.z > b.max.z + mz) continue;
+                List<Vector2> tri = Triangles(t);
+                if (tri != null)
+                {
+                    // the floor patch as triangles seen from above; test the point and the edges of the foot area
+                    for (int sx = -1; sx <= 1; sx++)
+                        for (int sz = -1; sz <= 1; sz++)
+                            if (InTriangles(tri, p.x + sx * mx, p.z + sz * mz)) return true;
+                    continue;
+                }
+                Vector3 q = new Vector3(p.x, Mathf.Clamp(0.02f, b.min.y, b.max.y), p.z);
+                Vector3 cp;
+                try { cp = t.ClosestPoint(q); } catch { cp = b.ClosestPoint(q); }
+                if (Mathf.Abs(cp.x - p.x) <= mx && Mathf.Abs(cp.z - p.z) <= mz) return true;
             }
-            int n = Physics.OverlapBoxNonAlloc(new Vector3(c.x, 0.5f, c.z), half, _hits, Quaternion.identity, mask, QueryTriggerInteraction.Ignore);
-            for (int i = 0; i < n; i++)
+            return false;
+        }
+
+        private static readonly Dictionary<int, List<Vector2>> _tris = new Dictionary<int, List<Vector2>>();
+
+        /// <summary>Triangles (x/z, world space, 3 points each) of a mesh collider; null if not a readable mesh.</summary>
+        private static List<Vector2> Triangles(Collider c)
+        {
+            MeshCollider mc = c as MeshCollider;
+            if (mc == null || mc.sharedMesh == null) return null;
+            int id = c.GetInstanceID();
+            List<Vector2> list;
+            if (_tris.TryGetValue(id, out list)) return list;
+            list = null;
+            try
             {
-                Collider h = _hits[i];
-                if (h == null) continue;
-                if (h.GetComponentInParent<CombatEntity>() != null) continue;
-                if (Ignore != null && h.transform.IsChildOf(Ignore)) continue;
-                PickupObject po = h.GetComponentInParent<PickupObject>();
-                if (po != null && !(po is Weapon_TwoHandedOverhead)) continue; // small pickups do not block
-                return true;
+                Vector3[] v = mc.sharedMesh.vertices;
+                int[] t = mc.sharedMesh.triangles;
+                if (v != null && t != null && v.Length > 0 && t.Length >= 3)
+                {
+                    list = new List<Vector2>(t.Length);
+                    Transform tr = mc.transform;
+                    for (int i = 0; i + 2 < t.Length; i += 3)
+                        for (int k = 0; k < 3; k++)
+                        {
+                            Vector3 w = tr.TransformPoint(v[t[i + k]]);
+                            list.Add(new Vector2(w.x, w.z));
+                        }
+                    Log.Write("Quietschboden " + c.name + ": " + (t.Length / 3) + " Dreiecke, konvex " + mc.convex);
+                }
+            }
+            catch (Exception e) { Log.Write("Quietschboden " + c.name + " nicht lesbar: " + e.Message); list = null; }
+            _tris[id] = list;
+            return list;
+        }
+
+        private static bool InTriangles(List<Vector2> tri, float x, float z)
+        {
+            for (int i = 0; i + 2 < tri.Count; i += 3)
+            {
+                Vector2 a = tri[i], b = tri[i + 1], c = tri[i + 2];
+                if (Mathf.Abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)) < 1e-4f) continue; // side faces seen from above
+                float d1 = (x - b.x) * (a.y - b.y) - (a.x - b.x) * (z - b.y);
+                float d2 = (x - c.x) * (b.y - c.y) - (b.x - c.x) * (z - c.y);
+                float d3 = (x - a.x) * (c.y - a.y) - (c.x - a.x) * (z - a.y);
+                bool neg = d1 < 0 || d2 < 0 || d3 < 0, pos = d1 > 0 || d2 > 0 || d3 > 0;
+                if (!(neg && pos)) return true;
             }
             return false;
         }
@@ -87,14 +194,22 @@ namespace RCGAccess
                 float minZ = Mathf.Min(from.z, to.z) - 5f, maxZ = Mathf.Max(from.z, to.z) + 2f;
                 int w = Mathf.Clamp(Mathf.CeilToInt((maxX - minX) / Cell) + 1, 2, 240);
                 int d = Mathf.Clamp(Mathf.CeilToInt((maxZ - minZ) / Cell) + 1, 2, 60);
-                // 0 unknown, 1 free, 2 blocked
+                // 0 unknown, 1 free, 2 blocked, 3 squeaky floor (passable only by jumping over it: expensive),
+                // 4 platform to jump onto (furniture, steps)
+                _base = from.y;
                 byte[] state = new byte[w * d];
+                Vector3 halfToy = new Vector3(0.35f * _inflate + 0.05f, 0, 0.05f + 0.05f);
                 Func<int, int, bool> free = delegate (int x, int z)
                 {
                     if (x < 0 || z < 0 || x >= w || z >= d) return false;
                     int i = z * w + x;
-                    if (state[i] == 0) state[i] = Blocked(new Vector3(minX + x * Cell, 0, minZ + z * Cell), mask) ? (byte)2 : (byte)1;
-                    return state[i] == 1;
+                    if (state[i] == 0)
+                    {
+                        Vector3 c = new Vector3(minX + x * Cell, 0, minZ + z * Cell);
+                        byte cs = CellState(c, mask);
+                        state[i] = cs == 2 ? (byte)2 : cs == 4 ? (byte)4 : (_base < 0.4f && ToyNear(c, halfToy.x, halfToy.z)) ? (byte)3 : (byte)1;
+                    }
+                    return state[i] == 1 || state[i] == 3 || state[i] == 4;
                 };
                 int sx = Mathf.Clamp(Mathf.RoundToInt((from.x - minX) / Cell), 0, w - 1);
                 int sz = Mathf.Clamp(Mathf.RoundToInt((from.z - minZ) / Cell), 0, d - 1);
@@ -132,7 +247,7 @@ namespace RCGAccess
                             if (dx != 0 && dz != 0 && (!free(cx + dx, cz) || !free(cx, cz + dz))) continue;
                             int ni = nz * w + nx;
                             if (closed[ni]) continue;
-                            float ng = g[cur] + ((dx != 0 && dz != 0) ? 1.414f : 1f);
+                            float ng = g[cur] + ((dx != 0 && dz != 0) ? 1.414f : 1f) + (state[ni] == 3 ? 12f : state[ni] == 4 ? 6f : 0f);
                             if (ng < g[ni]) { g[ni] = ng; parent[ni] = cur; open.Push(ng + Heu(nx, nz, gx, gz), ni); }
                         }
                 }
@@ -154,6 +269,28 @@ namespace RCGAccess
                     path.Add(new Vector3(minX + (c % w) * Cell, from.y, minZ + (c / w) * Cell));
                 }
                 if (path.Count == 0) path.Add(new Vector3(from.x, from.y, from.z));
+                if (_wantMap)
+                {
+                    _wantMap = false;
+                    System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                    HashSet<int> onPath = new HashSet<int>(chain);
+                    sb.Append("Rasterkarte x ").Append(minX.ToString("F2")).Append(" bis ").Append((minX + (w - 1) * Cell).ToString("F2"))
+                      .Append(", z ").Append(minZ.ToString("F2")).Append(" (unten) bis ").Append((minZ + (d - 1) * Cell).ToString("F2")).Append(" (oben); # Wand, ~ Quietschboden, ^ Moebel/Stufe (Sprung), * Weg, S Start, Z Ziel, ? nicht geprueft\r\n");
+                    for (int z = d - 1; z >= 0; z--)
+                    {
+                        for (int x = 0; x < w; x++)
+                        {
+                            int i = z * w + x;
+                            char ch = state[i] == 2 ? '#' : state[i] == 3 ? '~' : state[i] == 4 ? '^' : state[i] == 1 ? '.' : '?';
+                            if (onPath.Contains(i)) ch = '*';
+                            if (i == start) ch = 'S';
+                            if (x == gx && z == gz) ch = 'Z';
+                            sb.Append(ch);
+                        }
+                        sb.Append("\r\n");
+                    }
+                    LastMap = sb.ToString();
+                }
                 return path;
             }
             catch (Exception e) { Log.Error("PathGrid", e); return null; }

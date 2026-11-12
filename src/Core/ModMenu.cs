@@ -96,6 +96,13 @@ namespace RCGAccess
                 Get = delegate { return Settings.ModLang; },
                 Set = delegate (int v) { Settings.ModLang = v; Speech.ApplyLanguage(true); }
             });
+            _entries.Add(new Choice
+            {
+                Key = "m_speech",
+                Options = delegate { return new List<string> { Loc.T("speech_onecore"), Loc.T("speech_sapi"), Loc.T("speech_reader") }; },
+                Get = delegate { return Settings.SpeechEngine; },
+                Set = delegate (int v) { Settings.SpeechEngine = v; Speech.EnsureEngine(); }
+            });
             _entries.Add(VoiceChoice("m_voice_de", 0x07, true));
             _entries.Add(VoiceChoice("m_voice_en", 0x09, false));
             _entries.Add(new Number
@@ -251,7 +258,7 @@ namespace RCGAccess
                 Options = names,
                 Get = delegate
                 {
-                    string cur = german ? Settings.VoiceDe : Settings.VoiceEn;
+                    string cur = Speech.PreferredVoice(german);
                     List<string> o = names();
                     int i = string.IsNullOrEmpty(cur) ? 0 : o.IndexOf(cur);
                     return i < 0 ? 0 : i;
@@ -260,7 +267,7 @@ namespace RCGAccess
                 {
                     List<string> o = names();
                     string v = (i <= 0 || i >= o.Count) ? "" : o[i];
-                    if (german) Settings.VoiceDe = v; else Settings.VoiceEn = v;
+                    Speech.SetPreferredVoice(german, v);
                     Speech.ApplyLanguage(true);
                 }
             };
@@ -305,6 +312,7 @@ namespace RCGAccess
             if (!save) Settings.Restore(_snapshot);
             Settings.MenuVersion = Settings.CurrentMenuVersion;
             Settings.Save();
+            Speech.EnsureEngine();
             Speech.ApplyLanguage(true);
             Speech.Config("rate", Settings.Rate.ToString());
             Speech.Config("volume", Settings.SpeechVolume.ToString());

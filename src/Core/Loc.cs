@@ -59,12 +59,19 @@ namespace RCGAccess
             // menu entries
             A("m_modlang", "Sprache des Mods", "Mod language");
             A("m_modlang_help", "Automatisch spricht der Mod die Sprache des Spiels mit einer passenden Stimme. Deutsch oder English legt die Sprache fest.", "Automatic follows the game language with a matching voice. Deutsch or English fixes the language.");
+            A("m_speech", "Sprachausgabe", "Speech output");
+            A("m_speech_help", "OneCore: die modernen Windows-Stimmen, empfohlen. SAPI: klassische SAPI-Stimmen, auch 32-Bit-Stimmen wie Eloquence. Screenreader: dein laufender Screenreader wie NVDA oder JAWS spricht, mit seiner Stimme und seinem Tempo, auch auf der Braillezeile. Läuft kein Screenreader, spricht OneCore. Die Änderung gilt sofort.", "OneCore: the modern Windows voices, recommended. SAPI: classic SAPI voices, including 32-bit voices such as Eloquence. Screen reader: your running screen reader such as NVDA or JAWS speaks, with its own voice and rate, also on the braille display. If no screen reader is running, OneCore speaks. The change applies immediately.");
+            A("speech_onecore", "OneCore, Windows-Stimmen", "OneCore, Windows voices");
+            A("speech_sapi", "SAPI", "SAPI");
+            A("speech_reader", "Screenreader", "Screen reader");
+            A("speech_noreader", "Kein Screenreader gefunden, es spricht {0}.", "No screen reader found, {0} speaks.");
+            A("speech_fallback", "Gewählte Sprachausgabe nicht verfügbar, es spricht {0}.", "Chosen speech output not available, {0} speaks.");
             A("m_voice_de", "Deutsche Stimme", "German voice");
-            A("m_voice_de_help", "SAPI-Stimme für Deutsch. Automatisch nimmt die erste deutsche Stimme.", "SAPI voice for German. Automatic picks the first German voice.");
+            A("m_voice_de_help", "Stimme für Deutsch, passend zur gewählten Sprachausgabe OneCore oder SAPI. Automatisch nimmt die erste deutsche Stimme. Beim Screenreader gilt dessen Stimme.", "Voice for German, from the chosen speech output OneCore or SAPI. Automatic picks the first German voice. With a screen reader its own voice is used.");
             A("m_voice_en", "Englische Stimme", "English voice");
-            A("m_voice_en_help", "SAPI-Stimme für Englisch. Automatisch nimmt die erste englische Stimme.", "SAPI voice for English. Automatic picks the first English voice.");
+            A("m_voice_en_help", "Stimme für Englisch, passend zur gewählten Sprachausgabe OneCore oder SAPI. Automatisch nimmt die erste englische Stimme. Beim Screenreader gilt dessen Stimme.", "Voice for English, from the chosen speech output OneCore or SAPI. Automatic picks the first English voice. With a screen reader its own voice is used.");
             A("m_rate", "Sprechtempo", "Speech rate");
-            A("m_rate_help", "Tempo der Stimme von minus 5 bis 10. Im Spiel auch mit F7 und Umschalt plus F7.", "Speech rate from minus 5 to 10. In game also with F7 and Shift plus F7.");
+            A("m_rate_help", "Tempo der Stimme von minus 5 bis 10. Im Spiel auch mit F7 und Umschalt plus F7. Nicht beim Screenreader.", "Speech rate from minus 5 to 10. In game also with F7 and Shift plus F7. Not with a screen reader.");
             A("m_speechvol", "Lautstärke der Sprache", "Speech volume");
             A("m_speechvol_help", "Lautstärke der Mod-Stimme.", "Volume of the mod voice.");
             A("m_menus", "Menüs vorlesen", "Read menus");
@@ -106,8 +113,8 @@ namespace RCGAccess
             A("m_padkeys", "Mod-Funktionen am Controller", "Mod functions on the controller");
             A("m_padkeys_help", "Rechten Stick kurz drücken: Hinführen zum Ziel. Rechten Stick halten: Peilton an oder aus. Rechter Stick hoch und runter: Ziel wechseln. Rechter Stick links: Raum und Ausgänge. Rechter Stick rechts: Status. Den linken Stick drücken benutzt das Spiel für die Verhöhnung.", "Press right stick briefly: guide me to the target. Hold right stick: beacon on or off. Right stick up and down: change target. Right stick left: room and exits. Right stick right: status. The game uses the left stick press for taunting.");
             A("guard_keys", "Pattinson, Schlüssel nehmen", "Pattinson, take the keys");
-            A("toys_room", "Pattinson schläft. Auf dem Boden liegt quietschendes Spielzeug, {0} Stück. Trittst du darauf, wacht er auf und wirft dich raus. Hinführen geht um das Spielzeug herum; bei Spielzeug vor dir piept es hell. Bei Pattinson X halten, um die Schlüssel zu nehmen.", "Pattinson is asleep. There are {0} squeaky toys on the floor. Step on one and he wakes up and throws you out. Guiding walks around the toys; a toy in front of you beeps brightly. Hold X at Pattinson to take the keys.");
-            A("toy_warn", "Vorsicht, Spielzeug {0}", "Careful, toy {0}");
+            A("toys_room", "Pattinson schläft. Auf dem Boden gibt es {0} quietschende Stellen mit Spielzeug. Trittst du darauf, wacht er auf und wirft dich raus. Hinführen geht um die Stellen herum und springt über sie, wo es nicht anders geht. Selbst springst du mit A darüber. Liegt eine Stelle direkt vor dir, piept es hell. Bei Pattinson X halten, um die Schlüssel zu nehmen.", "Pattinson is asleep. There are {0} squeaky spots with toys on the floor. Step on one and he wakes up and throws you out. Guiding walks around the spots and jumps over them where there is no other way. Jump over them yourself with A. A spot right in front of you beeps brightly. Hold X at Pattinson to take the keys.");
+            A("toy_warn", "Vorsicht, Spielzeug {0}, mit A drüberspringen", "Careful, toy {0}, jump over it with A");
             A("m_menusamples", "Töne im Mod-Menü vorspielen", "Play sounds in the mod menu");
             A("m_menusamples_help", "Steht die Auswahl im Mod-Menü auf einer Funktion mit eigenem Ton, spielt der Mod diesen Ton nach der Ansage vor, damit du ihn lernst.", "When the mod menu selection is on a feature with its own sound, the mod plays that sound after the announcement so you can learn it.");
             A("m_tonetest", "Alle Töne anhören", "Listen to all sounds");
@@ -120,6 +127,7 @@ namespace RCGAccess
             A("m_autodoor_help", "Führt dich das Hinführen zu einer offenen Tür, hält der Mod X für dich und du gehst direkt in den nächsten Raum. Bewegst du den linken Stick, bricht das ab.", "When guiding brings you to an open door, the mod holds X for you and you walk straight into the next room. Moving the left stick cancels it.");
             A("door_auto", "{0}, gehe hindurch.", "{0}, going through.");
             A("shop_money", "Dein Geld: {0} Dollar.", "Your money: {0} dollars.");
+            A("walk_blocked_closed", "Weg versperrt, Ziel {0}. Dieser Teil ist gerade gesperrt, meist bis alle Gegner besiegt sind oder die Geschichte ihn öffnet.", "Way closed, target {0}. This part is closed for now, usually until all enemies are defeated or the story opens it.");
             A("npc_no", "Die Person reagiert gerade nicht. Versuch es gleich noch einmal.", "The person does not react right now. Try again in a moment.");
             A("npc_fight", "Während eines Kampfes redet hier niemand mit dir. Erst alle Gegner besiegen.", "Nobody talks to you during a fight. Defeat all enemies first.");
             A("save_hint", "Achtung: Das Spiel speichert nur beim Betreten eines Raums. Was du seitdem gemacht hast, etwa Einkäufe, geht beim Beenden verloren. Wechsle vorher einmal den Raum.", "Note: the game only saves when you enter a room. What you did since, such as purchases, is lost when quitting. Change rooms once before.");

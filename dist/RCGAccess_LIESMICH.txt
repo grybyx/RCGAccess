@@ -1,5 +1,38 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.3.0
+Version 0.3.5
+
+Neu in Version 0.3.5
+- Neue Wahl der Sprachausgabe im Mod-Menü (zweiter Eintrag "Sprachausgabe"), umgesetzt mit Prism von Ethin Probst:
+  - OneCore, Windows-Stimmen (Standard, empfohlen): die modernen Windows-Stimmen wie Microsoft Katja oder Hedda.
+  - SAPI: die klassischen SAPI-Stimmen wie bisher, auch 32-Bit-Stimmen wie Eloquence.
+  - Screenreader: dein laufender Screenreader (NVDA, JAWS, ZDSR, System Access, ZoomText und andere) spricht mit
+    seiner eigenen Stimme und seinem Tempo, Texte erscheinen auch auf der Braillezeile. Läuft kein Screenreader,
+    spricht OneCore, und der Mod sagt das an.
+- Die Wahl gilt sofort, du hörst die neue Ausgabe direkt im Menü.
+- Deutsche und englische Stimme merkt sich der Mod getrennt für OneCore und SAPI.
+- Das Mod-Menü öffnet sich wegen des neuen Eintrags beim nächsten Start einmal von selbst.
+
+Neu in Version 0.3.4
+- Ankunftstür: Die Sperre gegen ungewolltes Zurückgehen greift jetzt auch, wenn das Spiel die Tür sofort beim Erscheinen
+  anbietet (Einkaufszentrum: Läden und Fressmeile).
+- "Weg blockiert" bei gesperrten Türen oder Kampfbereichen heißt jetzt "Weg versperrt … gerade gesperrt, meist bis alle
+  Gegner besiegt sind oder die Geschichte ihn öffnet".
+
+Neu in Version 0.3.3
+- Hinführen kann jetzt auf Möbel und Stufen springen, wenn der Weg darüber führt (zum Beispiel in Pattinsons Haus über
+  Sofa und Regale zu Pattinson, oder auf die Stufe vor der Tür zum Hinterhof). Um niedrige Hindernisse läuft es weiter
+  lieber herum.
+- Pattinsons Haus: Nach dem Nehmen der Schlüssel gibt es keine Spielzeug-Warnungen und Sprünge mehr.
+
+Neu in Version 0.3.2
+- Pattinsons Haus: Die quietschenden Stellen ziehen sich quer durch den Raum, man muss über sie springen. Das Hinführen
+  sucht die schmalste Stelle, nimmt Anlauf und springt selbst (A). Selbst springst du mit A; die Warnung sagt jetzt
+  "Vorsicht, Spielzeug …, mit A drüberspringen".
+
+Neu in Version 0.3.1
+- Pattinsons Haus: Die quietschenden Stellen sind lange schräge Streifen. Der Mod prüft jetzt ihre echte Form statt
+  eines groben Rechtecks; Hinführen findet den Weg dazwischen, und "Vorsicht, Spielzeug" kommt nur noch, wenn wirklich
+  eine Stelle vor dir liegt. Das letzte Stück zum Ziel geht nie quer über eine solche Stelle.
 
 Neu in Version 0.3.0
 - Töne lernen: Im Mod-Menü spielt jede Funktion mit eigenem Ton diesen Ton nach der Ansage vor (abschaltbar mit
@@ -174,11 +207,13 @@ INSTALLATION
    Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
 2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
    das kann ein paar Sekunden länger dauern.
-3. Beim ersten Start sagt der Mod "RCGAccess 0.3.0 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.3.5 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
    Erst mit "Speichern und schließen" geht es ins Spiel.
 
-Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und mindestens eine
-SAPI-Stimme in der Sprache des Spiels (für Deutsch zum Beispiel Microsoft Hedda Desktop).
+Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und eine Stimme in der
+Sprache des Spiels: für OneCore eine Windows-Stimme (Einstellungen, Zeit und Sprache, Sprache, zum Beispiel
+Microsoft Katja oder Hedda), für SAPI eine SAPI-Stimme (zum Beispiel Microsoft Hedda Desktop). Mit der Einstellung
+Screenreader spricht dein Screenreader.
 Der Mod spricht immer die Sprache des Spiels: Stellst du im Spiel eine andere Sprache ein, wechselt
 der Mod mit, samt passender Stimme. Für Sprachen ohne eigene Mod-Texte nimmt der Mod englische Texte.
 
@@ -193,7 +228,7 @@ Solange das Menü offen ist, steht das Spiel still.
 - Speichern und schließen: F11 oder Start
 - Strg allein stoppt die Sprache, auch im Menü.
 
-Einträge: Sprache des Mods, deutsche und englische Stimme, Sprechtempo, Lautstärke der Sprache,
+Einträge: Sprache des Mods, Sprachausgabe (OneCore, SAPI oder Screenreader), deutsche und englische Stimme, Sprechtempo, Lautstärke der Sprache,
 Menüs vorlesen, Dialoge, Sprüche von Gegnern und Passanten, Tutorials und Einblendungen, Interaktionshinweise,
 Gegner-Radar, Lautstärke Gegner-Klopfen (0 bis 200 %), Reichweite des Radars, Gegner ansagen, Angriffswarnung,
 Gesundheitstöne, Boss-Energie, Raumansage, Sackgassen-Hinweis, Gruben-Warnung, Geld-Töne, Geldbetrag ansagen,

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace RCGAccess
 {
-    /// <summary>Connection to the 32-bit speech/tone server (RCGAccessSpeech.exe).</summary>
+    /// <summary>Connection to the speech/tone server: RCGAccessSpeech.exe (32 bit, SAPI) or RCGAccessSpeech64.exe (Prism: OneCore or screen reader).</summary>
     public static class Speech
     {
         private static Process _proc;
@@ -29,47 +29,88 @@ namespace RCGAccess
         public static bool Running { get { return _proc != null && _in != null; } }
         public static bool IsSpeaking { get { return _speaking; } }
 
+        /// <summary>Speech output of the running server: 0 OneCore, 1 SAPI, 2 screen reader (Settings.SpeechEngine).</summary>
+        private static int _runningEngine = -1;
+        /// <summary>Name of the speech output in use (e.g. "OneCore", "NVDA", "SAPI").</summary>
+        public static string EngineName = "";
+        private static volatile string _pendingNotice;
+
         public static void Start()
         {
             try
             {
-                string exe = Path.Combine(Mod.DataDir, "RCGAccessSpeech.exe");
+                int engine = Settings.SpeechEngine;
+                string exe = Path.Combine(Mod.DataDir, engine == 1 ? "RCGAccessSpeech.exe" : "RCGAccessSpeech64.exe");
+                string args = engine == 2 ? "reader" : (engine == 1 ? "sapi" : "onecore");
+                if (!File.Exists(exe) || (engine != 1 && IntPtr.Size != 8))
+                {
+                    Log.Write("Sprachserver fehlt oder passt nicht: " + exe + ", nehme SAPI.");
+                    exe = Path.Combine(Mod.DataDir, "RCGAccessSpeech.exe");
+                    args = "sapi";
+                }
                 if (!File.Exists(exe)) { Log.Write("Sprachserver fehlt: " + exe); return; }
-                ProcessStartInfo psi = new ProcessStartInfo(exe, "");
+                ProcessStartInfo psi = new ProcessStartInfo(exe, args);
                 psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
                 psi.RedirectStandardInput = true;
                 psi.RedirectStandardOutput = true;
                 psi.WorkingDirectory = Mod.DataDir;
-                _proc = Process.Start(psi);
-                _in = _proc.StandardInput;
-                _in.AutoFlush = true;
+                Process proc = Process.Start(psi);
+                lock (_lock)
+                {
+                    _proc = proc;
+                    _in = proc.StandardInput;
+                    _in.AutoFlush = true;
+                }
+                _runningEngine = engine;
+                _speaking = false;
                 Thread t = new Thread(ReadLoop);
                 t.IsBackground = true;
-                t.Start();
-                Log.Write("Sprachserver gestartet (PID " + _proc.Id + ").");
+                t.Start(proc);
+                Log.Write("Sprachserver gestartet (PID " + proc.Id + ", " + Path.GetFileName(exe) + " " + args + ").");
                 Config("rate", Settings.Rate.ToString(CultureInfo.InvariantCulture));
                 Config("volume", Settings.SpeechVolume.ToString(CultureInfo.InvariantCulture));
             }
             catch (Exception e) { Log.Error("Speech.Start", e); _proc = null; _in = null; }
         }
 
-        private static void ReadLoop()
+        /// <summary>Restarts the server when the chosen speech output changed (mod menu).</summary>
+        public static void EnsureEngine()
         {
+            if (_runningEngine == Settings.SpeechEngine) return;
+            Log.Write("Sprachausgabe wechselt zu " + Settings.SpeechEngine);
+            Shutdown();
+            _lang = -1; _voice = null;
+            ActiveVoice = ""; MissingVoiceLang = ""; EngineName = "";
+            Start();
+            ApplyLanguage(true);
+        }
+
+        private static void ReadLoop(object o)
+        {
+            Process proc = (Process)o;
             try
             {
-                StreamReader r = _proc.StandardOutput;
+                StreamReader r = proc.StandardOutput;
                 string line;
                 while ((line = r.ReadLine()) != null)
                 {
+                    if (proc != _proc) break;
                     if (line == "D1") _speaking = true;
                     else if (line == "D0") _speaking = false;
                     else if (line.StartsWith("V")) { ActiveVoice = line.Substring(1); MissingVoiceLang = ""; Log.Write("Aktive Stimme: " + ActiveVoice); }
-                    else if (line.StartsWith("N")) { MissingVoiceLang = line.Substring(1); Log.Write("Keine SAPI-Stimme fuer Sprache " + MissingVoiceLang); }
+                    else if (line.StartsWith("N")) { MissingVoiceLang = line.Substring(1); Log.Write("Keine Stimme fuer Sprache " + MissingVoiceLang); }
+                    else if (line.StartsWith("E"))
+                    {
+                        string[] p = line.Substring(1).Split('|');
+                        EngineName = p.Length > 1 ? p[1] : "";
+                        Log.Write("Sprachausgabe: " + line.Substring(1));
+                        if (p[0] == "fallback") _pendingNotice = Loc.T(_runningEngine == 2 ? "speech_noreader" : "speech_fallback", EngineName);
+                    }
                 }
             }
             catch { }
-            _speaking = false;
+            if (proc == _proc) _speaking = false;
         }
 
         private static void Send(string line)
@@ -171,7 +212,7 @@ namespace RCGAccess
         public static void ApplyLanguage(bool force)
         {
             int lcid = VoiceLcid();
-            string voice = (lcid & 0x3FF) == 0x07 ? Settings.VoiceDe : ((lcid & 0x3FF) == 0x09 ? Settings.VoiceEn : "");
+            string voice = (lcid & 0x3FF) == 0x07 ? PreferredVoice(true) : ((lcid & 0x3FF) == 0x09 ? PreferredVoice(false) : "");
             if (!force && lcid == _lang && voice == _voice) return;
             _lang = lcid; _voice = voice;
             Config("voice", voice);
@@ -179,10 +220,25 @@ namespace RCGAccess
             Log.Write("Sprache der Stimme: " + lcid.ToString("X") + ", Wunschstimme '" + voice + "'");
         }
 
+        /// <summary>Chosen voice for German or English; OneCore and SAPI voices are kept apart.</summary>
+        public static string PreferredVoice(bool german)
+        {
+            if (Settings.SpeechEngine == 1) return german ? Settings.VoiceDe : Settings.VoiceEn;
+            return german ? Settings.VoiceDeOneCore : Settings.VoiceEnOneCore;
+        }
+
+        public static void SetPreferredVoice(bool german, string name)
+        {
+            if (Settings.SpeechEngine == 1) { if (german) Settings.VoiceDe = name; else Settings.VoiceEn = name; }
+            else { if (german) Settings.VoiceDeOneCore = name; else Settings.VoiceEnOneCore = name; }
+        }
+
         public static void SetGamePaused(bool paused) { _gamePaused = paused; ApplyAudio(); }
 
         public static void Update()
         {
+            string notice = _pendingNotice;
+            if (notice != null) { _pendingNotice = null; Say(notice, false); }
             ApplyLanguage(false);
             float target = 1f;
             bool duck = (Settings.DuckSpeech && _speaking) || (Settings.DuckTones && Time.realtimeSinceStartup < _toneUntil);
@@ -211,8 +267,12 @@ namespace RCGAccess
 
         public static void Shutdown()
         {
+            Process p = _proc;
             try { Send("Q"); } catch { }
-            try { if (_proc != null && !_proc.HasExited) _proc.Kill(); } catch { }
+            lock (_lock) { _proc = null; _in = null; }
+            _speaking = false;
+            try { if (p != null && !p.WaitForExit(600)) p.Kill(); } catch { }
+            try { if (p != null && !p.HasExited) p.Kill(); } catch { }
         }
     }
 }

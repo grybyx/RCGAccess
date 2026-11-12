@@ -15,3 +15,5 @@ REFS=$(ls $M/*.dll | grep -v -E "Sony|XboxOne|DataPlatform|ConsoleUtils|Storage|
 REFS="$REFS$B/BepInEx.dll,$B/0Harmony.dll"
 $PW -NoProfile -File $CSC -out build/RCGAccess.dll -kind dll -platform anycpu -srcDir src -refs "$REFS"
 $PW -NoProfile -File $CSC -out build/RCGAccessSpeech.exe -kind exe -platform x86 -srcDir speech -refs "$M/mscorlib.dll,$M/System.dll" | grep -v CS0649 || true
+$PW -NoProfile -File $CSC -out build/RCGAccessSpeech64.exe -kind exe -platform x64 -srcDir speech -refs "$M/mscorlib.dll,$M/System.dll" | grep -v CS0649 || true
+# The release also needs prism.dll (Windows x64, https://github.com/ethindp/prism/releases) next to RCGAccessSpeech64.exe.

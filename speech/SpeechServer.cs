@@ -1,4 +1,6 @@
-// RCGAccessSpeech - 32-bit speech and tone server for RCGAccess (River City Girls accessibility mod).
+// RCGAccessSpeech - speech and tone server for RCGAccess (River City Girls accessibility mod).
+// Built twice from this file: RCGAccessSpeech.exe (32 bit, SAPI) and RCGAccessSpeech64.exe (64 bit, Prism:
+// OneCore voices or the running screen reader; argument "onecore" or "reader").
 // Reads one command per line from standard input:
 //   S|flags|base64(utf8 text)   speak; flags: i = interrupt, q = queue
 //   X                           stop speech
@@ -7,7 +9,8 @@
 //   V                           write voice list file again
 //   L|base64(text)              log line
 //   Q                           quit
-// Writes "D1"/"D0" to standard output when speaking starts/stops (used by the mod for ducking).
+// Writes "D1"/"D0" to standard output when speaking starts/stops (used by the mod for ducking),
+// "E<mode>|<backend name>" once the speech output is ready (mode: sapi, onecore, reader, fallback).
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,20 +35,33 @@ namespace RCGAccessSpeech
         static bool _speaking;
         static Mixer _mixer;
         static volatile bool _quit;
+        static string _engine = "sapi";
 
         [MTAThread]
         static int Main(string[] args)
         {
             _dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             try { _log = new StreamWriter(Path.Combine(_dir, "RCGAccessSpeech.log"), false, new UTF8Encoding(false)); _log.AutoFlush = true; } catch { }
-            Log("Sprachserver gestartet. Argumente: " + string.Join(" ", args));
-            try
+            Log("Sprachserver gestartet (" + (IntPtr.Size * 8) + " Bit). Argumente: " + string.Join(" ", args));
+            if (args.Length > 0) _engine = args[0].ToLowerInvariant();
+            string mode = "sapi";
+            if (_engine != "sapi")
             {
-                Type t = Type.GetTypeFromProgID("SAPI.SpVoice");
-                _voice = Activator.CreateInstance(t);
-                Log("SAPI bereit.");
+                if (IntPtr.Size == 8 && PrismOut.Init(_engine == "reader", Log)) mode = PrismOut.IsReader ? "reader" : (_engine == "reader" ? "fallback" : "onecore");
+                else mode = "fallback";
             }
-            catch (Exception e) { Log("SAPI nicht verfuegbar: " + e.Message); }
+            if (!PrismOut.Active)
+            {
+                try
+                {
+                    Type t = Type.GetTypeFromProgID("SAPI.SpVoice");
+                    _voice = Activator.CreateInstance(t);
+                    Log("SAPI bereit.");
+                }
+                catch (Exception e) { Log("SAPI nicht verfuegbar: " + e.Message); }
+            }
+            Console.Out.WriteLine("E" + mode + "|" + (PrismOut.Active ? PrismOut.Name : "SAPI"));
+            Console.Out.Flush();
             WriteVoices();
             ApplyVoice();
             try { _mixer = new Mixer(); _mixer.Start(); Log("Ton-Mixer bereit."); }
@@ -66,6 +82,7 @@ namespace RCGAccessSpeech
             _quit = true;
             try { if (_mixer != null) _mixer.Stop(); } catch { }
             try { Stop(); } catch { }
+            try { PrismOut.Shutdown(); } catch { }
             Log("Sprachserver beendet.");
             return 0;
         }
@@ -141,6 +158,7 @@ namespace RCGAccessSpeech
 
         static void Speak(string text, bool interrupt)
         {
+            if (PrismOut.Active) { lock (_lock) PrismOut.Speak(text, interrupt); return; }
             if (_voice == null) return;
             lock (_lock)
             {
@@ -153,6 +171,7 @@ namespace RCGAccessSpeech
 
         static void Stop()
         {
+            if (PrismOut.Active) { lock (_lock) PrismOut.Stop(); return; }
             if (_voice == null) return;
             lock (_lock) { Call(_voice, "Speak", "", 1 | 2); }
         }
@@ -163,11 +182,13 @@ namespace RCGAccessSpeech
             {
                 case "rate":
                     _rate = Math.Max(-10, Math.Min(10, (int)F(val, 2)));
-                    if (_voice != null) lock (_lock) Set(_voice, "Rate", _rate);
+                    if (PrismOut.Active) lock (_lock) PrismOut.SetRate(_rate);
+                    else if (_voice != null) lock (_lock) Set(_voice, "Rate", _rate);
                     break;
                 case "volume":
                     _volume = Math.Max(0, Math.Min(100, (int)F(val, 100)));
-                    if (_voice != null) lock (_lock) Set(_voice, "Volume", _volume);
+                    if (PrismOut.Active) lock (_lock) PrismOut.SetVolume(_volume);
+                    else if (_voice != null) lock (_lock) Set(_voice, "Volume", _volume);
                     break;
                 case "lang":
                     {
@@ -191,10 +212,11 @@ namespace RCGAccessSpeech
             return 0;
         }
 
-        class VoiceInfo { public object Token; public string Name; public int Lang; }
+        internal class VoiceInfo { public object Token; public int Index; public string Name; public int Lang; }
 
         static List<VoiceInfo> ListVoices()
         {
+            if (PrismOut.Active) { lock (_lock) return PrismOut.Voices(); }
             List<VoiceInfo> list = new List<VoiceInfo>();
             if (_voice == null) return list;
             lock (_lock)
@@ -236,7 +258,8 @@ namespace RCGAccessSpeech
 
         static void ApplyVoice()
         {
-            if (_voice == null) return;
+            if (PrismOut.Active && PrismOut.IsReader) return; // the screen reader keeps its own voice
+            if (_voice == null && !PrismOut.Active) return;
             try
             {
                 List<VoiceInfo> list = ListVoices();
@@ -252,6 +275,7 @@ namespace RCGAccessSpeech
                 if (pick == null)
                 {
                     Log("Keine Stimme fuer Sprache " + _lang.ToString("X") + " gefunden, Stimme bleibt.");
+                    if (PrismOut.Active) lock (_lock) { PrismOut.SetRate(_rate); PrismOut.SetVolume(_volume); }
                     Console.Out.WriteLine("N" + _lang.ToString("X"));
                     Console.Out.Flush();
                 }
@@ -259,9 +283,18 @@ namespace RCGAccessSpeech
                 {
                     lock (_lock)
                     {
-                        _voice.GetType().InvokeMember("Voice", BindingFlags.PutRefDispProperty, null, _voice, new object[] { pick.Token });
-                        Set(_voice, "Rate", _rate);
-                        Set(_voice, "Volume", _volume);
+                        if (PrismOut.Active)
+                        {
+                            PrismOut.SetVoice(pick.Index);
+                            PrismOut.SetRate(_rate);
+                            PrismOut.SetVolume(_volume);
+                        }
+                        else
+                        {
+                            _voice.GetType().InvokeMember("Voice", BindingFlags.PutRefDispProperty, null, _voice, new object[] { pick.Token });
+                            Set(_voice, "Rate", _rate);
+                            Set(_voice, "Volume", _volume);
+                        }
                     }
                     Log("Stimme: " + pick.Name + " (" + pick.Lang.ToString("X") + ")");
                     Console.Out.WriteLine("V" + pick.Name);
@@ -276,9 +309,10 @@ namespace RCGAccessSpeech
             while (!_quit)
             {
                 Thread.Sleep(40);
-                if (_voice == null) continue;
+                if (_voice == null && !PrismOut.Active) continue;
                 bool speaking = false;
-                try
+                if (PrismOut.Active) { lock (_lock) speaking = PrismOut.IsSpeaking(); }
+                else try
                 {
                     lock (_lock)
                     {

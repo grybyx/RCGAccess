@@ -239,6 +239,7 @@ namespace RCGAccess
         private static MethodInfo _setV = AccessTools.PropertySetter(typeof(CombatInput), "VerticalDir");
         private static MethodInfo _setRun = AccessTools.PropertySetter(typeof(CombatInput), "Run");
         private static MethodInfo _setQuick = AccessTools.PropertySetter(typeof(CombatInput), "Quick");
+        private static MethodInfo _setJump = AccessTools.PropertySetter(typeof(CombatInput), "Jump");
         private static readonly object[] _arg = new object[1];
         private static PlayerInput _cachedInput;
         private static RCG.Player _cachedPlayer;
@@ -272,6 +273,7 @@ namespace RCGAccess
                     _arg[0] = h; _setH.Invoke(__instance, _arg);
                     _arg[0] = v; _setV.Invoke(__instance, _arg);
                     if (Navigator.WalkRun && _setRun != null) { _arg[0] = true; _setRun.Invoke(__instance, _arg); }
+                    if (Navigator.WalkJump && _setJump != null) { _arg[0] = true; _setJump.Invoke(__instance, _arg); }
                 }
                 else Navigator.CheckDeadEnd(p, rawH, rawV);
             }
