@@ -55,6 +55,7 @@ namespace RCGAccess
             if (p == null) { _lastHp = -1; return; }
             UpdateHealth(p);
             UpdateMoney(p);
+            try { UpdateRecruit(p); } catch (Exception e) { Log.Error("UpdateRecruit", e); }
             if (GameInfo.Quiet) return;
             UpdateEnemies(p);
             UpdateScreenLock();
@@ -274,7 +275,7 @@ namespace RCGAccess
                 Vector3 ep = nearest.transform.position;
                 float range = Mathf.Max(2f, Settings.RadarRange);
                 float t = Mathf.Clamp01((best - 0.6f) / (range - 0.6f));
-                float interval = Mathf.Lerp(0.11f, 1.1f, t);
+                float interval = Mathf.Lerp(0.12f, 1.4f, t * t * 0.4f + t * 0.6f); // echo sounder: slow far away, fast up close
                 _nextKnock = now + interval;
                 Knock(ep.x - pp.x, ep.z - pp.z, HpPercent(nearest), nearest is BossBaseEntity, WeaponOf(nearest) != null);
             }
@@ -304,25 +305,25 @@ namespace RCGAccess
             _pendEnemy = null;
         }
 
-        /// <summary>Soft "tock": side = stereo, higher = further up (back), lower = further down (front), quieter = weaker enemy.</summary>
+        /// <summary>Echo sounder: one tone per beat from the enemy's side. Low = not on your line, high = on your line
+        /// (your attacks can hit). Faster = closer, quieter = weaker enemy, harder sound = armed.</summary>
         private static void Knock(float dx, float dz, float hp, bool boss) { Knock(dx, dz, hp, boss, false); }
 
         /// <summary>Depth difference within which an enemy counts as "on your line" (your attacks can reach it).</summary>
         public const float LineDepth = 0.35f;
 
+        public const float LowPitch = 220f, HighPitch = 740f;
+
         private static void Knock(float dx, float dz, float hp, bool boss, bool armed)
         {
-            bool line = Mathf.Abs(dz) <= LineDepth;
-            float pitch = 240f;
-            // clearly higher above you (further back), clearly lower below you (in front)
-            if (!line && dz > 0) pitch = 240f * Mathf.Lerp(1.35f, 1.9f, Mathf.Clamp01((dz - LineDepth) / 3f));
-            else if (!line) pitch = 240f * Mathf.Lerp(0.72f, 0.5f, Mathf.Clamp01((-dz - LineDepth) / 3f));
-            if (boss) pitch *= 0.75f;
+            bool line = Settings.LineTone && Mathf.Abs(dz) <= LineDepth;
+            float pitch = line ? HighPitch : LowPitch;
+            // optional: off the line slightly higher when the enemy is further up, lower when further down
+            if (!line && Settings.RadarHeight && Mathf.Abs(dz) > LineDepth) pitch *= dz > 0 ? 1.22f : 0.8f;
+            if (boss) pitch *= 0.85f;
             float vol = (0.2f + 0.8f * Mathf.Clamp01(hp)) * Settings.KnockVolume / 100f;
             float pan = StrongPan(dx);
-            Speech.RawTone(pitch, 55, pan, vol, armed ? 1 : 0, pitch * 0.7f, 0);
-            // same line: a bright click right after the knock - now your attacks can hit
-            if (line && Settings.LineTone) Speech.RawTone(2200f, 18, pan, vol * 0.55f, 1, 2600f, 60f);
+            Speech.RawTone(pitch, line ? 45 : 60, pan, vol * (line ? 0.8f : 1f), armed ? 1 : 0, line ? pitch : pitch * 0.85f, 0);
         }
 
         /// <summary>Clear stereo side: anything more than 30 cm to the side is at least half way to that ear.</summary>
@@ -476,18 +477,149 @@ namespace RCGAccess
             }
         }
 
-        public static void OnRecruitButton(RCG.Player p)
+        private static bool _assistExpected;
+        private static EnemyEnitity _summon;
+        private static int _recruitHearts = -1;
+        private static PlayerRecruit.RecruitState _recruitState = PlayerRecruit.RecruitState.Idle;
+        private static bool _recruitWasUsed;
+
+        /// <summary>Name of the current recruit (from its enemy type).</summary>
+        private static string RecruitName(PlayerRecruit r)
         {
-            // LT pressed while holding an enemy that cannot be recruited (any more)
             try
             {
-                if (p == null || p.PlayerID != 0 || !p.Puppet.IsMaster) return;
-                EnemyEnitity e = p.Puppet.Slave as EnemyEnitity;
-                if (e == null) return;
-                if (!e._CanBeRecruted) Speech.Say(Loc.T("recruit_not_begging"), true);
-                else if (p._playerRecruit != null && p._playerRecruit._EnemySummon != null) Speech.Say(Loc.T("recruit_busy"), true);
+                if (r._EnemySummon != null) return EnemyName(r._EnemySummon);
+                string t = Loc.TryT("enemy_" + r.GetEnemyClassType().ToString().ToLower().Replace(" ", ""));
+                if (t != null) return t;
             }
             catch { }
+            return Loc.T("recruit_generic");
+        }
+
+        private static int RecruitMaxHearts(PlayerRecruit r)
+        {
+            try { return PlayerRecruit.GetMaxHealth(r.Data._DifficaltyType, r._Player != null ? r._Player.PlayerID : -1); } catch { return 3; }
+        }
+
+        private static float RecruitCooldownLeft(PlayerRecruit r)
+        {
+            try
+            {
+                object dur = UiReader.Traverse(r, "_CoolDownDuration");
+                float d = dur is float ? (float)dur : 1f;
+                return Mathf.Max(0f, d - r.mTimeToCoolDownCounter);
+            }
+            catch { return 0f; }
+        }
+
+        /// <summary>Prefix of PlayerRecruit.RecruitButtonPressed (LT/LB): says why nothing happens, or prepares the
+        /// announcement of the helper.</summary>
+        public static void OnRecruitButton(RCG.Player p)
+        {
+            _assistExpected = false;
+            try
+            {
+                if (p == null || p.PlayerID != 0) return;
+                PlayerRecruit r = p._playerRecruit;
+                // holding an enemy: recruiting
+                if (p.Puppet != null && p.Puppet.IsMaster)
+                {
+                    EnemyEnitity e = p.Puppet.Slave as EnemyEnitity;
+                    if (e != null)
+                    {
+                        Log.Write("LT beim Halten von " + EnemyName(e) + ", bettelt " + e._CanBeRecruted);
+                        if (!e._CanBeRecruted) Speech.Say(Loc.T("recruit_not_begging"), true);
+                        else if (r != null && r._EnemySummon != null) Speech.Say(Loc.T("recruit_busy"), true);
+                        return;
+                    }
+                }
+                if (r == null) return;
+                // calling the helper
+                CombatEnitityMainManager.EnemyClassType type = r.GetEnemyClassType();
+                string state = r.State.ToString();
+                Log.Write("LT Hilfe rufen: Rekrut " + type + ", Herzen " + r.mAssistHealth + ", Zustand " + state + ", im Einsatz " + (r._EnemySummon != null)
+                    + ", Rest " + RecruitCooldownLeft(r).ToString("F1") + " s");
+                if (!Settings.RecruitInfo) { _assistExpected = true; return; }
+                if (type == CombatEnitityMainManager.EnemyClassType.Nothing) Speech.Say(Loc.T("recruit_none"), true);
+                else if (r.mAssistHealth <= 0) Speech.Say(Loc.T("recruit_empty", RecruitName(r)), true);
+                else if (r._EnemySummon != null) Speech.Say(Loc.T("recruit_fighting", RecruitName(r)), true);
+                else if (r.State != PlayerRecruit.RecruitState.Idle)
+                {
+                    Speech.Tone(200, 120, 0, 0.6f, 3, 200, 0);
+                    Speech.Say(Loc.T("recruit_wait", RecruitName(r), Mathf.CeilToInt(RecruitCooldownLeft(r))), true);
+                }
+                else _assistExpected = true;
+            }
+            catch (Exception e) { Log.Error("OnRecruitButton", e); }
+        }
+
+        /// <summary>Postfix of PlayerRecruit.RecruitButtonPressed.</summary>
+        public static void OnRecruitButtonDone(RCG.Player p)
+        {
+            try
+            {
+                if (!_assistExpected || p == null || p.PlayerID != 0) return;
+                _assistExpected = false;
+                PlayerRecruit r = p._playerRecruit;
+                if (r == null) return;
+                if (r._EnemySummon != null)
+                {
+                    _summon = r._EnemySummon;
+                    _recruitWasUsed = true;
+                    Log.Write("Hilfe gerufen: " + EnemyName(_summon));
+                    if (!Settings.RecruitInfo) return;
+                    Speech.Tone(392, 80, 0, 0.7f, 1, 392, 0);
+                    Speech.Tone(587, 140, 0, 0.7f, 1, 784, 85);
+                    Speech.Say(Loc.T("recruit_called", RecruitName(r), r.mAssistHealth, RecruitMaxHearts(r)), true);
+                }
+                else
+                {
+                    Log.Write("Hilfe rufen ohne Wirkung (Zustand " + r.State + ")");
+                    if (Settings.RecruitInfo) Speech.Say(Loc.T("recruit_failed"), true);
+                }
+            }
+            catch (Exception e) { Log.Error("OnRecruitButtonDone", e); }
+        }
+
+        /// <summary>Hearts lost by the helper, helper gone, helper ready again.</summary>
+        private static void UpdateRecruit(RCG.Player p)
+        {
+            PlayerRecruit r = p._playerRecruit;
+            if (r == null) return;
+            int hearts = r.mAssistHealth;
+            PlayerRecruit.RecruitState st = r.State;
+            if (_recruitHearts >= 0 && hearts < _recruitHearts && r.GetEnemyClassType() != CombatEnitityMainManager.EnemyClassType.Nothing)
+            {
+                Log.Write("Rekrut getroffen, Herzen " + hearts);
+                if (Settings.RecruitInfo)
+                {
+                    if (hearts <= 0) { Speech.Tone(300, 300, 0, 0.7f, 0, 120, 0); Speech.Say(Loc.T("recruit_lost", RecruitName(r)), false); }
+                    else Speech.Say(Loc.T("recruit_hit", RecruitName(r), hearts), false);
+                }
+            }
+            if (_recruitState != st)
+            {
+                if (st == PlayerRecruit.RecruitState.Idle && _recruitWasUsed && hearts > 0 && Settings.RecruitInfo && !GameInfo.Quiet)
+                {
+                    Speech.Tone(784, 70, 0, 0.5f, 0, 1046, 0);
+                    Speech.Say(Loc.T("recruit_ready", RecruitName(r)), false);
+                }
+                if (st == PlayerRecruit.RecruitState.Idle) _recruitWasUsed = false;
+            }
+            _recruitHearts = hearts;
+            _recruitState = st;
+            if (_summon != null && r._EnemySummon == null) _summon = null;
+        }
+
+        /// <summary>Recruit part of the status (F5).</summary>
+        private static string RecruitStatus(RCG.Player p)
+        {
+            PlayerRecruit r = p._playerRecruit;
+            if (r == null || r.GetEnemyClassType() == CombatEnitityMainManager.EnemyClassType.Nothing) return Loc.T("st_norecruit");
+            if (r.mAssistHealth <= 0) return Loc.T("recruit_empty", RecruitName(r));
+            string when = r._EnemySummon != null ? Loc.T("st_recruit_fighting")
+                : r.State == PlayerRecruit.RecruitState.Idle ? Loc.T("st_recruit_ready") : Loc.T("st_recruit_wait", Mathf.CeilToInt(RecruitCooldownLeft(r)));
+            return Loc.T("st_recruit", RecruitName(r), r.mAssistHealth, RecruitMaxHearts(r), when);
         }
 
         /// <summary>Called for every hit on a player, also when the damage help blocks it, so the hit stays audible.</summary>
@@ -501,11 +633,19 @@ namespace RCGAccess
             else Speech.Tone(180, 140, 0, 0.8f, 2, 120, 0);
         }
 
+        private static float _maxHitDz;
+
+        /// <summary>A hit of player 1 on an enemy (for statistics of the line range).</summary>
+        public static void OnPlayerHitEnemy(RCG.Player p, EnemyEnitity e)
+        {
+            float dz = Mathf.Abs(e.transform.position.z - p.transform.position.z);
+            if (dz > _maxHitDz) { _maxHitDz = dz; Log.Write("Groesster Tiefenabstand bei Treffer bisher: " + dz.ToString("F2")); }
+        }
+
         public static void PreviewKnock()
         {
-            Knock(-3f, 0, 1f, false);
-            float vol = 0.2f + 0.8f * 0.3f;
-            Speech.RawTone(240, 55, 0.6f, vol * Settings.KnockVolume / 100f, 0, 170, 400);
+            Knock(-3f, 1f, 1f, false);
+            Knock(-3f, 0f, 1f, false);
         }
 
         private static void CheckAttack(EnemyEnitity e, Vector3 pp, Vector3 ep, float d, float now)
@@ -602,6 +742,7 @@ namespace RCGAccess
             if (vis == 0) parts.Add(Loc.T("st_noenemies"));
             else if (Nearest != null) parts.Add(Loc.T("st_enemies", vis, EnemyName(Nearest), GameInfo.Direction(p.transform.position, Nearest.transform.position), Mathf.RoundToInt(HpPercent(Nearest) * 100)));
             if (ScreenLockRunning) parts.Add(Loc.T("st_locked"));
+            try { parts.Add(RecruitStatus(p)); } catch { }
             return string.Join(". ", parts.ToArray());
         }
 

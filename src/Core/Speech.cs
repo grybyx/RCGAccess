@@ -212,7 +212,7 @@ namespace RCGAccess
         public static void ApplyLanguage(bool force)
         {
             int lcid = VoiceLcid();
-            string voice = (lcid & 0x3FF) == 0x07 ? PreferredVoice(true) : ((lcid & 0x3FF) == 0x09 ? PreferredVoice(false) : "");
+            string voice = PreferredVoice(lcid & 0x3FF);
             if (!force && lcid == _lang && voice == _voice) return;
             _lang = lcid; _voice = voice;
             Config("voice", voice);
@@ -220,17 +220,16 @@ namespace RCGAccess
             Log.Write("Sprache der Stimme: " + lcid.ToString("X") + ", Wunschstimme '" + voice + "'");
         }
 
-        /// <summary>Chosen voice for German or English; OneCore and SAPI voices are kept apart.</summary>
-        public static string PreferredVoice(bool german)
+        /// <summary>Chosen voice for a primary language of the current speech output ("" = automatic); OneCore and SAPI voices are kept apart.</summary>
+        public static string PreferredVoice(int prim)
         {
-            if (Settings.SpeechEngine == 1) return german ? Settings.VoiceDe : Settings.VoiceEn;
-            return german ? Settings.VoiceDeOneCore : Settings.VoiceEnOneCore;
+            return Settings.GetVoice(Settings.SpeechEngine == 1 ? Settings.VoicesSapi : Settings.VoicesOneCore, prim);
         }
 
-        public static void SetPreferredVoice(bool german, string name)
+        public static void SetPreferredVoice(int prim, string name)
         {
-            if (Settings.SpeechEngine == 1) { if (german) Settings.VoiceDe = name; else Settings.VoiceEn = name; }
-            else { if (german) Settings.VoiceDeOneCore = name; else Settings.VoiceEnOneCore = name; }
+            if (Settings.SpeechEngine == 1) Settings.VoicesSapi = Settings.SetVoice(Settings.VoicesSapi, prim, name);
+            else Settings.VoicesOneCore = Settings.SetVoice(Settings.VoicesOneCore, prim, name);
         }
 
         public static void SetGamePaused(bool paused) { _gamePaused = paused; ApplyAudio(); }

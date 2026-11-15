@@ -14,7 +14,61 @@ namespace RCGAccess
         private static readonly Dictionary<int, List<Collider>> _doorCols = new Dictionary<int, List<Collider>>();
         private static readonly HashSet<string> _written = new HashSet<string>();
 
-        public static void OnSceneLoaded() { _doorCols.Clear(); }
+        public static void OnSceneLoaded() { _doorCols.Clear(); _inside.Clear(); _insideLogged.Clear(); }
+
+        private class InsideCache { public float At; public Vector3 From; public bool Found; public Vector3 Point; }
+        private static readonly Dictionary<int, InsideCache> _inside = new Dictionary<int, InsideCache>();
+        private static readonly HashSet<int> _insideLogged = new HashSet<int>();
+        private static readonly Collider[] _ov = new Collider[32];
+
+        /// <summary>Large walk-in door triggers (a mesh the player has to walk into, e.g. DoorToFight): their bounds say little
+        /// about their shape. Samples the floor inside the bounds at body height and returns the reachable point inside
+        /// the trigger nearest to the player.</summary>
+        /// <summary>Reachable point inside a walk-in trigger (quest areas, big door triggers).</summary>
+        public static bool InsidePoint(Collider c, Vector3 from, out Vector3 point) { return InsideTrigger(c, from, out point); }
+
+        private static bool InsideTrigger(Collider c, Vector3 from, out Vector3 point)
+        {
+            point = Vector3.zero;
+            int id = c.GetInstanceID();
+            float now = Time.realtimeSinceStartup;
+            InsideCache ic;
+            if (_inside.TryGetValue(id, out ic) && now - ic.At < 2f && (ic.From - from).sqrMagnitude < 1f)
+            {
+                point = ic.Point;
+                return ic.Found;
+            }
+            ic = new InsideCache { At = now, From = from };
+            _inside[id] = ic;
+            Bounds b = c.bounds;
+            int mask = 1 << c.gameObject.layer;
+            float bestD = float.MaxValue;
+            int tested = 0, floorPts = 0;
+            float x0 = Mathf.Max(b.min.x, from.x - 20f), x1 = Mathf.Min(b.max.x, from.x + 20f);
+            for (float x = x0 + 0.25f; x <= x1; x += 0.5f)
+                for (float z = b.min.z + 0.15f; z <= b.max.z; z += 0.3f)
+                {
+                    Vector3 f = new Vector3(x, from.y, z);
+                    if (!PathGrid.HasFloor(f) || PathGrid.Blocked(f)) continue;
+                    floorPts++;
+                    bool inside = false;
+                    for (int k = 0; k < 3 && !inside; k++)
+                    {
+                        tested++;
+                        int n = Physics.OverlapSphereNonAlloc(new Vector3(x, from.y + 0.3f + k * 0.7f, z), 0.25f, _ov, mask, QueryTriggerInteraction.Collide);
+                        for (int i = 0; i < n; i++) if (_ov[i] == c) { inside = true; break; }
+                    }
+                    if (!inside) continue;
+                    float d = (x - from.x) * (x - from.x) + (z - from.z) * (z - from.z);
+                    if (d < bestD) { bestD = d; point = f; }
+                }
+            ic.Found = bestD < float.MaxValue;
+            ic.Point = point;
+            if (_insideLogged.Add(id))
+                Log.Write("Tuer-Trigger " + GameInfo.Path(c.transform) + (c is MeshCollider ? (((MeshCollider)c).convex ? " (konvex)" : " (nicht konvex)") : "")
+                    + ": Bodenpunkte " + floorPts + ", Pruefungen " + tested + (ic.Found ? ", begehbarer Punkt " + point.ToString("F2") : ", kein begehbarer Punkt in Koerperhoehe"));
+            return ic.Found;
+        }
 
         /// <summary>Colliders that belong to this interactable (the player has to overlap one of them).</summary>
         public static List<Collider> Colliders(InteractEntity e)
@@ -55,6 +109,17 @@ namespace RCGAccess
                 if (level == 2 && !(c.isTrigger && c.gameObject.layer == inter)) continue;
                 if (level == 1 && !(c.isTrigger && c.name.IndexOf("Spawn", StringComparison.OrdinalIgnoreCase) < 0)) continue;
                 Bounds b = c.bounds;
+                // big walk-in trigger: find a reachable point that is really inside its shape
+                if (level == 1 && c is MeshCollider && (b.size.x > 4f || b.size.z > 4f))
+                {
+                    Vector3 ip;
+                    if (InsideTrigger(c, from, out ip))
+                    {
+                        float di = (ip.x - from.x) * (ip.x - from.x) + (ip.z - from.z) * (ip.z - from.z);
+                        if (di < best) { best = di; point = ip; found = true; }
+                        continue;
+                    }
+                }
                 // stand well inside the area: centre for narrow areas, otherwise half a metre from its sides
                 float mx = b.size.x < 2f ? b.size.x * 0.5f : 0.5f;
                 float qx = Mathf.Clamp(from.x, b.min.x + mx, b.max.x - mx);
@@ -64,6 +129,14 @@ namespace RCGAccess
                 if (d < best) { best = d; point = q; found = true; }
             }
             return found;
+        }
+
+        private static string Comps(GameObject go)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (MonoBehaviour mb in go.GetComponents<MonoBehaviour>())
+                if (mb != null) sb.Append(sb.Length == 0 ? " Skripte: " : ", ").Append(mb.GetType().Name);
+            return sb.ToString();
         }
 
         private static string B(Bounds b)
@@ -139,6 +212,23 @@ namespace RCGAccess
                     }
                 }
                 catch { }
+                try
+                {
+                    foreach (MonoBehaviour mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+                    {
+                        string tn = mb.GetType().Name;
+                        if (tn == "PlayableDirector" || tn.IndexOf("Trigger", StringComparison.Ordinal) >= 0 || tn.IndexOf("Timeline", StringComparison.Ordinal) >= 0
+                            || tn.IndexOf("Cinematic", StringComparison.Ordinal) >= 0 || tn.IndexOf("Portrait", StringComparison.Ordinal) >= 0)
+                            sb.Append("Skript ").Append(tn).Append(" an ").Append(GameInfo.Path(mb.transform)).Append(mb.isActiveAndEnabled ? "" : " (AUS)").Append(" pos ").Append(mb.transform.position.ToString("F2")).Append("\r\n");
+                    }
+                    foreach (Pit pit in UnityEngine.Object.FindObjectsOfType<Pit>())
+                        foreach (Collider c in pit.GetComponentsInChildren<Collider>())
+                            sb.Append("Grube ").Append(Col(c)).Append("\r\n");
+                    foreach (UnityEngine.Playables.PlayableDirector pd in UnityEngine.Object.FindObjectsOfType<UnityEngine.Playables.PlayableDirector>())
+                        sb.Append("Timeline ").Append(GameInfo.Path(pd.transform)).Append(" Zustand ").Append(pd.state).Append(" Zeit ").Append(pd.time.ToString("F1")).Append("/").Append(pd.duration.ToString("F1"))
+                          .Append(" automatisch ").Append(pd.playOnAwake).Append("\r\n");
+                }
+                catch (Exception e) { sb.Append("Skriptliste Fehler ").Append(e.Message).Append("\r\n"); }
                 if (p != null)
                 {
                     sb.Append("Kollider im Umkreis von 12 m:\r\n");
@@ -146,7 +236,7 @@ namespace RCGAccess
                     foreach (Collider c in Physics.OverlapSphere(pp, 12f, ~0, QueryTriggerInteraction.Collide))
                     {
                         if (c.GetComponentInParent<CombatEntity>() != null) continue;
-                        sb.Append("  ").Append(Col(c)).Append("\r\n");
+                        sb.Append("  ").Append(Col(c)).Append(c.isTrigger ? Comps(c.gameObject) : "").Append("\r\n");
                         if (++n >= 150) break;
                     }
                 }

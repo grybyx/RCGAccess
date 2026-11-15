@@ -1,5 +1,76 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.3.5
+Version 0.4.1
+
+Neu in Version 0.4.1
+- Aufgabenbereiche als Navigator-Ziel: Stellen, an denen etwas beginnt, sobald du hineinläufst (Gespräch,
+  Aufgaben-Gegenstand), heißen "Aufgabenbereich, hineinlaufen" und stehen ganz oben in der Zielliste. Danach
+  heißen sie "schon betreten". Beispiel: im Pfandhaus der Bereich rechts am Tresen.
+- Sabu-Statuen (Nebenaufgabe) sind Navigator-Ziele: "Sabu-Statue, zerstörbar". Angreifen, bis sie zerbricht.
+
+Neu in Version 0.4.0
+- Gegner-Radar als Echolot: nur noch ein Ton pro Schlag. Tiefer Ton = Gegner nicht auf deiner Linie, hoher Ton =
+  auf deiner Linie (jetzt treffen deine Angriffe). Langsam, wenn er weit weg ist, immer schneller, je näher er
+  kommt. Der zusätzliche Klick entfällt.
+- Neuer Schalter "Radar: oben und unten im tiefen Ton" (Gegner und Kampf, aus): Der tiefe Ton ist dann etwas
+  höher bei Gegnern weiter oben und etwas tiefer bei Gegnern weiter unten.
+- Hindernisse statt Wand: Läufst du gegen ein Möbelstück, eine Kiste oder ein Auto, kommt zweimal dumpfes Klopfen
+  und "Hindernis, oben oder unten herumgehen". Wände und Raumgrenzen rauschen wie bisher. Steht ein Gegner im
+  Weg, kommt kein Wandton mehr.
+- Das Protokoll notiert, mit welchem Tiefenabstand deine Treffer landen (zum Feineinstellen der Linie).
+- Neue Versionsnummern: nach 0.3.9 folgt 0.4.0 (die Version 0.3.10 war ein Zählfehler).
+- Das Mod-Menü öffnet sich wegen des neuen Schalters einmal von selbst.
+
+Neu in Version 0.3.10
+- Laufsteg: Automatisches Hinführen (linker Stick) holt vor einem Abgrund selbst Anlauf (ein Stück zurück, dann
+  rennen) und springt an der Kante. Abgründe bis etwa 4,5 Meter werden eingeplant (vorher 3,5, zu wenig).
+- Hinführen läuft nie mehr ohne Sprung über eine Kante, sondern hält davor an.
+- Geführte Navigation am Abgrund: Ansage mit der Breite und wie man springt; an der Kante ein hoher Doppelton =
+  jetzt A drücken. Ohne ganzen Weg sagt sie das, statt "Gleich da".
+- Fehler behoben, der nach einem Sturz das Hinführen störte.
+
+Neu in Version 0.3.9
+- Geführte Navigation: Rechten Stick kurz drücken (oder Alt+F8). Du läufst selbst, der Mod zeigt den Weg:
+  - Ein Ortungston kommt aus der Richtung, in die du gehen sollst (links/rechts).
+  - Tonhöhe: gleich = du bist auf der Linie, tiefer = du bist zu weit unten, höher = du bist zu weit oben.
+  - Ansagen für jedes Wegstück ("rechts 4 Meter, 1 Meter nach oben"), "Hindernis, hochspringen" und
+    "Abgrund, mit Anlauf springen". Am Ziel kommt der Ankunftston mit Hinweis.
+  - Nochmal rechten Stick drücken beendet sie.
+- Automatisches Hinführen jetzt mit dem LINKEN Stick (drücken), auch zu bettelnden Gegnern und Gegenständen.
+  Die Verhöhnung des Spiels auf dem linken Stick entfällt dafür. Im Mod-Menü (Navigation und Hinführen,
+  "Linker Stick: automatisches Hinführen") abschaltbar; dann gilt die alte Belegung.
+- Rechten Stick halten schaltet weiterhin den Peilton.
+- Hinführen springt über Abgründe (bis etwa 3,5 Meter, mit Anlauf), zum Beispiel auf dem Laufsteg.
+- "Vorsicht, Abgrund" wird je Abgrund nur noch einmal gesagt, bis du dich entfernt hast; der Warnton kommt
+  seltener.
+- Das Mod-Menü öffnet sich wegen des neuen Eintrags einmal von selbst.
+
+Neu in Version 0.3.8
+- Rekruten (neuer Schalter "Rekruten-Ansagen" unter Gegner und Kampf, an):
+  - LT oder LB ruft deinen Rekruten: Ton und "Reina kommt zu Hilfe, 3 von 3 Herzen".
+  - Passiert nichts, sagt der Mod warum: kein Rekrut, keine Herzen mehr, kämpft schon oder noch nicht bereit
+    (mit Sekunden).
+  - Ansage, wenn der Rekrut getroffen wird (Herzen übrig) und wenn er wieder bereit ist.
+  - Der Status (F5 oder rechter Stick rechts) nennt den Rekruten mit Herzen und ob er bereit ist.
+- "Abgestürzt" kommt nur noch bei einem echten Sturz in die Tiefe, nicht mehr beim Heruntersteigen von Möbeln,
+  Stufen oder Bühnen.
+
+Neu in Version 0.3.7
+- Ausgänge, die man durch Hineinlaufen benutzt (zum Beispiel im Baugebäude vom Aufzug aus weiter), haben jetzt das
+  richtige Ziel: Hinführen läuft zu einer Stelle, die wirklich im Ausgangsbereich liegt, statt am Rand stehen zu
+  bleiben.
+- Das Raumprotokoll nennt zusätzlich Skripte und Zwischensequenzen des Raums (hilft bei der Fehlersuche).
+
+Neu in Version 0.3.6
+- Mod-Menü mit Untermenüs: Sprache und Stimme, Vorlesen, Gegner und Kampf, Navigation und Hinführen, Töne und
+  Lautstärke, Erweitert. A oder Eingabe öffnet ein Untermenü, B oder Rücktaste (oder der Eintrag "Zurück") geht
+  zurück. Donation, Accessibility Mods by Grybyx, Speichern und Verwerfen stehen weiter im Hauptmenü.
+- Nur noch ein Eintrag "Stimme für …": Er zeigt die Stimmen der Sprache, in der der Mod gerade spricht (also der
+  Spielsprache). Deine bisherige Wahl wird übernommen.
+- Hinführen erkennt Abgründe und Löcher im Boden und geht um sie herum (zum Beispiel auf der Baustelle).
+  Stürzt du trotzdem ab, endet das Hinführen mit "Abgestürzt" statt vom Startpunkt aus weiterzulaufen.
+- Kletterstellen: Hinführen geht direkt an die Kletterstelle und klettert selbst hoch (oder von oben runter),
+  dann kommt "Oben angekommen". Klappt es nicht, sagt der Mod das.
+- Das Mod-Menü öffnet sich wegen der neuen Ordnung beim nächsten Start einmal von selbst.
 
 Neu in Version 0.3.5
 - Neue Wahl der Sprachausgabe im Mod-Menü (zweiter Eintrag "Sprachausgabe"), umgesetzt mit Prism von Ethin Probst:
@@ -207,7 +278,7 @@ INSTALLATION
    Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
 2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
    das kann ein paar Sekunden länger dauern.
-3. Beim ersten Start sagt der Mod "RCGAccess 0.3.5 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.4.1 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
    Erst mit "Speichern und schließen" geht es ins Spiel.
 
 Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und eine Stimme in der
@@ -222,19 +293,27 @@ DAS MOD-MENÜ (F11)
 Solange das Menü offen ist, steht das Spiel still.
 - Eintrag wählen: Pfeil hoch/runter, Steuerkreuz oder linker Stick hoch/runter
 - Wert ändern: Pfeil links/rechts, Steuerkreuz links/rechts
-- Umschalten oder auslösen: Eingabe, Leertaste oder A
+- Umschalten, auslösen oder Untermenü öffnen: Eingabe, Leertaste oder A
 - Eintrag erklären: F1 oder Y
-- Verwerfen und schließen: Rücktaste oder B
+- Zurück aus einem Untermenü: Rücktaste oder B (oder der Eintrag "Zurück")
+- Verwerfen und schließen: Rücktaste oder B im Hauptmenü
 - Speichern und schließen: F11 oder Start
 - Strg allein stoppt die Sprache, auch im Menü.
 
-Einträge: Sprache des Mods, Sprachausgabe (OneCore, SAPI oder Screenreader), deutsche und englische Stimme, Sprechtempo, Lautstärke der Sprache,
-Menüs vorlesen, Dialoge, Sprüche von Gegnern und Passanten, Tutorials und Einblendungen, Interaktionshinweise,
-Gegner-Radar, Lautstärke Gegner-Klopfen (0 bis 200 %), Reichweite des Radars, Gegner ansagen, Angriffswarnung,
-Gesundheitstöne, Boss-Energie, Raumansage, Sackgassen-Hinweis, Gruben-Warnung, Geld-Töne, Geldbetrag ansagen,
-Lautstärke der Orientierungstöne, Mod-Funktionen am Controller, Hinführen bei Gegnern anhalten,
-Spiel leiser bei Sprache, Spiel leiser bei Tönen, Lautstärke beim Leiserwerden, ausführliches Protokoll,
-Mod-Menü bei jedem Start, Donation, Accessibility Mods by Grybyx, Speichern, Verwerfen.
+Hauptmenü:
+- Sprache und Stimme: Sprache des Mods, Sprachausgabe (OneCore, SAPI oder Screenreader), Stimme für die
+  aktuelle Sprache, Sprechtempo, Lautstärke der Sprache.
+- Vorlesen: Menüs, Dialoge, Sprüche von Gegnern und Passanten, Tutorials und Einblendungen, Raumansage,
+  Eingesammeltes ansagen, Geldbetrag ansagen.
+- Gegner und Kampf: Gegner-Radar, heller Klick auf deiner Linie, Lautstärke Gegner-Klopfen (0 bis 200 %),
+  Reichweite des Radars, Gegner ansagen, Angriffswarnung, Gesundheitstöne, Boss-Energie, Taste für die
+  Gegnerzahl, Schutz vor Schaden.
+- Navigation und Hinführen: Mod-Funktionen am Controller, Interaktionshinweise, Gegenstände als Ziele,
+  Sackgassen-Hinweis, Gruben-Warnung, Hinführen bei Gegnern anhalten, beim Hinführen rennen, Türen öffnen.
+- Töne und Lautstärke: Lautstärke der Orientierungstöne, Geld-Töne, Spiel leiser bei Sprache, Spiel leiser bei
+  Tönen, Lautstärke beim Leiserwerden, Töne im Menü vorspielen, Alle Töne anhören.
+- Erweitert: ausführliches Protokoll, Mod-Menü bei jedem Start.
+- Donation, Accessibility Mods by Grybyx, Speichern und schließen, Verwerfen und schließen.
 
 
 TASTEN IM SPIEL
@@ -253,12 +332,14 @@ Tastatur:
 - Umschalt+F6: Tontest
 - F8: Peilton (Navigator) an/aus
 - Umschalt+F8 / Strg+Umschalt+F8: nächstes / vorheriges Ziel
-- Strg+F8: Hinführen zum Ziel an/aus
+- Strg+F8: automatisches Hinführen zum Ziel an/aus
+- Alt+F8: geführte Navigation an/aus
 - F11: Mod-Menü
 - Strg+F12: Szenen-Protokoll (für die Fehlersuche)
 
 Controller (abschaltbar im Mod-Menü, nur während man spielt):
-- Rechten Stick kurz drücken: Hinführen zum Ziel an/aus
+- Rechten Stick kurz drücken: geführte Navigation an/aus (du läufst, Ton und Ansagen zeigen den Weg)
+- Linken Stick drücken: automatisches Hinführen an/aus
 - Rechten Stick halten: Peilton an/aus
 - Rechter Stick hoch / runter: vorheriges / nächstes Ziel
 - Rechter Stick links: Raum mit allen Ausgängen
@@ -277,7 +358,7 @@ In River City Girls geht es oft nicht nur nach links oder rechts weiter, sondern
 - Läufst du gegen eine Grenze, hörst du ein Rauschen von dieser Seite. Danach sagt der Mod zum Beispiel:
   "Hier geht es nicht weiter nach rechts. Nächster Ausgang: Ausgang oben nach Shopping-Center, links 4 Meter, 3 Meter nach oben.
   Rechten Stick drücken führt dich hin."
-- Rechten Stick kurz drücken (oder Strg+F8) führt dich automatisch zum gewählten Ziel. Der Peilton läuft dabei mit.
+- Linken Stick drücken (oder Strg+F8) führt dich automatisch zum gewählten Ziel. Der Peilton läuft dabei mit.
   Bewegst du den linken Stick selbst, übernimmst du wieder. Kommt ein Gegner näher als 4 Meter, hält das Hinführen an.
   An einem Randausgang läuft der Mod durch den Ausgang hindurch; an einer Tür sagt er "X halten".
 - Mit dem rechten Stick hoch/runter wählst du ein anderes Ziel: Ausgänge (zuerst die Richtung Quest,
@@ -291,9 +372,11 @@ TÖNE
 - Peilton (Navigator): kurzer Ton aus der Richtung des Ziels. Stereo = Seite, höher = Ziel liegt weiter oben (hinten),
   tiefer = weiter unten (vorne), schneller = näher. Dreieck-Klang bei Ausgängen, heller Rechteck-Klang beim Ausgang
   Richtung Quest, weicher Sinus bei Läden und Personen.
-- Gegner-Klopfen: weiches "Tock" des nächsten Gegners. Stereo = Seite, deutlich höher = Gegner weiter oben,
-  deutlich tiefer = weiter unten, mit hellem Klick = auf deiner Linie (deine Angriffe treffen), schneller = näher,
-  leiser = Gegner hat weniger Energie. Bosse klopfen tiefer.
+- Gegner-Radar (Echolot, ab 0.4.0): ein Ton pro Schlag aus der Richtung des nächsten Gegners. Tiefer Ton = nicht
+  auf deiner Linie, hoher Ton = auf deiner Linie (deine Angriffe treffen). Langsam = weit weg, immer schneller =
+  näher. Leiser = Gegner hat weniger Energie, härterer Klang = bewaffnet. Wahlweise ist der tiefe Ton etwas höher
+  oder tiefer, je nachdem ob der Gegner oben oder unten steht.
+- Hindernis (Möbel, Kiste, Auto): zweimal dumpfes Klopfen von der Seite; Wand oder Raumgrenze: Rauschen.
 - Angriffswarnung: zwei kurze, helle, harte Töne von der Seite eines nahen Gegners, der gerade angreift.
 - Gegner besiegt: fallender Dreiklang von seiner Seite.
 - Kampfbereich gesperrt: zwei tiefe harte Töne. Bereich frei: steigender Zweiklang.

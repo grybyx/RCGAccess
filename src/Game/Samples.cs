@@ -6,26 +6,31 @@ namespace RCGAccess
     {
         private static float KV { get { return Settings.KnockVolume / 100f; } }
 
-        /// <summary>Enemy knock: on your line (with click), above you (higher), below you (lower), weak enemy (quieter).</summary>
+        /// <summary>Echo sounder: enemy off your line (low, slow, then faster), then on your line (high), weak enemy (quieter).</summary>
         public static void Knock(float d)
         {
             float v = KV;
-            Speech.RawTone(240, 55, -0.6f, v, 0, 168, d);
-            Speech.RawTone(2200, 18, -0.6f, v * 0.55f, 1, 2600, d + 60);
-            Speech.RawTone(240 * 1.6f, 55, -0.6f, v, 0, 240 * 1.6f * 0.7f, d + 450);
-            Speech.RawTone(240 * 0.6f, 55, -0.6f, v, 0, 240 * 0.6f * 0.7f, d + 900);
-            Speech.RawTone(240, 55, -0.6f, v * 0.3f, 0, 168, d + 1350);
+            float[] at = { 0, 700, 1250, 1650, 1950, 2170 };
+            foreach (float a in at) Speech.RawTone(Combat.LowPitch, 60, -0.6f, v, 0, Combat.LowPitch * 0.85f, d + a);
+            for (int i = 0; i < 6; i++) Speech.RawTone(Combat.HighPitch, 45, -0.6f, v * 0.8f, 0, Combat.HighPitch, d + 2700 + i * 160);
+            Speech.RawTone(Combat.LowPitch, 60, -0.6f, v * 0.3f, 0, Combat.LowPitch * 0.85f, d + 3900);
         }
 
-        /// <summary>Same line: knock with click, then knock without click (further up).</summary>
+        /// <summary>Same line: low tones, then the high tone when the enemy is on your line.</summary>
         public static void Line(float d)
         {
             float v = KV;
-            Speech.RawTone(240, 55, 0.5f, v, 0, 168, d);
-            Speech.RawTone(2200, 18, 0.5f, v * 0.55f, 1, 2600, d + 60);
-            Speech.RawTone(240, 55, 0.5f, v, 0, 168, d + 400);
-            Speech.RawTone(2200, 18, 0.5f, v * 0.55f, 1, 2600, d + 460);
-            Speech.RawTone(240 * 1.4f, 55, 0.5f, v, 0, 240 * 1.4f * 0.7f, d + 900);
+            Speech.RawTone(Combat.LowPitch, 60, 0.5f, v, 0, Combat.LowPitch * 0.85f, d);
+            Speech.RawTone(Combat.LowPitch, 60, 0.5f, v, 0, Combat.LowPitch * 0.85f, d + 400);
+            Speech.RawTone(Combat.HighPitch, 45, 0.5f, v * 0.8f, 0, Combat.HighPitch, d + 800);
+            Speech.RawTone(Combat.HighPitch, 45, 0.5f, v * 0.8f, 0, Combat.HighPitch, d + 1100);
+        }
+
+        /// <summary>Obstacle in the way (furniture, crate, car), not a wall.</summary>
+        public static void Obstacle(float d)
+        {
+            Speech.Tone(170, 45, 0.6f, 0.8f, 1, 150, d);
+            Speech.Tone(170, 45, 0.6f, 0.8f, 1, 150, d + 120);
         }
 
         public static void Attack(float d)
@@ -105,13 +110,14 @@ namespace RCGAccess
             Speech.Say(Loc.T("tonetest"), true);
             float d = 2600;
             Beacon(d); d += 2700;
-            Knock(d); d += 2000;
+            Knock(d); d += 4300;
             Attack(d); d += 700;
             Health(d); d += 2300;
             Fight(d); d += 2600;
             Pit(d); d += 700;
             Toy(d); d += 600;
             Wall(d); d += 700;
+            Obstacle(d); d += 600;
             Interact(d); d += 1300;
             Pickup(d); d += 800;
             Money(d);

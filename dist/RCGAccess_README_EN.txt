@@ -1,5 +1,70 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.3.5
+Version 0.4.1
+
+New in version 0.4.1
+- Quest areas as navigator targets: spots where something starts as soon as you walk in (a conversation, a quest
+  item) are called "Quest area, walk into it" and come first in the target list. Afterwards "already entered".
+  Example: in the pawn shop the area on the right at the counter.
+- Sabu statues (side quest) are navigator targets: "Sabu statue, breakable". Attack it until it breaks.
+
+New in version 0.4.0
+- Enemy radar as an echo sounder: only one tone per beat. Low tone = enemy not on your line, high tone = on your
+  line (now your attacks hit). Slow when it is far away, faster and faster as it comes closer. The extra click is gone.
+- New toggle "Radar: up and down in the low tone" (Enemies and fighting, off): the low tone is then a bit higher for
+  enemies further up and a bit lower for enemies further down.
+- Obstacles instead of walls: walking into furniture, a crate or a car gives two dull knocks and "Obstacle, walk
+  around it". Walls and room boundaries make noise as before. An enemy in the way no longer gives a wall sound.
+- The log notes the depth distance of your hits (to fine-tune the line).
+- New version numbers: 0.4.0 follows 0.3.9 (version 0.3.10 was a counting mistake).
+- The mod menu opens once by itself because of the new toggle.
+
+New in version 0.3.10
+- Runway: automatic guiding (left stick) takes a run-up before an abyss by itself (a bit back, then running) and
+  jumps at the edge. Abysses up to about 4.5 meters are planned (before 3.5, too little).
+- Guiding never walks over an edge without jumping, it stops in front of it.
+- Guided navigation at an abyss: announcement of the width and how to jump; at the edge a high double tone = press
+  A now. Without a complete way it says so instead of "Almost there".
+- Fixed an error that disturbed guiding after a fall.
+
+New in version 0.3.9
+- Guided navigation: press the right stick briefly (or Alt+F8). You walk yourself, the mod shows the way:
+  - A guide tone comes from the side you should walk to (left/right).
+  - Pitch: steady = you are on the line, lower = you are too far down, higher = you are too far up.
+  - Hints for each stretch ("right 4 meters, 1 meter up"), "Obstacle, jump up" and "Abyss, take a run-up and
+    jump". At the goal the arrival sound with a hint.
+  - Press the right stick again to end it.
+- Automatic guiding is now on the LEFT stick (press), also to begging enemies and items. The game's taunt on the
+  left stick is off for this. Switchable in the mod menu (Navigation and guiding, "Left stick: automatic guiding");
+  then the old layout applies.
+- Holding the right stick still switches the beacon.
+- Guiding jumps across abysses (up to about 3.5 meters, with a run-up), e.g. on the runway.
+- "Careful, drop" is said only once per abyss until you have moved away; the warning sound comes less often.
+- The mod menu opens once by itself because of the new entry.
+
+New in version 0.3.8
+- Recruits (new toggle "Recruit announcements" under Enemies and fighting, on):
+  - LT or LB calls your recruit: sound and "Reina comes to help, 3 of 3 hearts".
+  - If nothing happens, the mod says why: no recruit, no hearts left, already fighting or not ready yet (with seconds).
+  - Announcement when the recruit is hit (hearts left) and when it is ready again.
+  - The status (F5 or right stick right) names the recruit with hearts and whether it is ready.
+- "You fell" only comes for a real fall into the depth, no longer when stepping down from furniture, steps or stages.
+
+New in version 0.3.7
+- Exits you use by walking into them (e.g. in the construction building, onward from the elevator) now have the right
+  goal: guiding walks to a spot really inside the exit area instead of stopping at its edge.
+- The room protocol also lists the room's scripts and cutscenes (helps with troubleshooting).
+
+New in version 0.3.6
+- Mod menu with submenus: Speech and voice, Reading, Enemies and fighting, Navigation and guiding, Sounds and volume,
+  Advanced. A or Enter opens a submenu, B or Backspace (or the entry "Back") goes back. Donation, Accessibility Mods
+  by Grybyx, Save and Discard stay in the main menu.
+- Only one entry "Voice for …": it lists the voices of the language the mod speaks now (the game language).
+  Your previous choice is kept.
+- Guiding detects abysses and holes in the floor and walks around them (e.g. at the construction site). If you
+  fall anyway, guiding ends with "You fell" instead of walking on from the respawn point.
+- Climbing spots: guiding walks right to the climbing spot and climbs up (or down from the top) by itself, then says
+  "Reached the top". If it does not work, the mod tells you.
+- The mod menu opens once by itself on the next start because of the new layout.
 
 New in version 0.3.5
 - New speech output choice in the mod menu (second entry "Speech output"), built with Prism by Ethin Probst:
@@ -173,7 +238,7 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.3.5 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.4.1 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
 Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and a voice in the game language:
@@ -186,11 +251,25 @@ MOD MENU (F11)
 The game is paused while the menu is open.
 - Select entry: arrow up/down, d-pad or left stick up/down
 - Change value: arrow left/right, d-pad left/right
-- Toggle or activate: Enter, Space or A
+- Toggle, activate or open a submenu: Enter, Space or A
 - Explain entry: F1 or Y
-- Discard and close: Backspace or B
+- Back from a submenu: Backspace or B (or the entry "Back")
+- Discard and close: Backspace or B in the main menu
 - Save and close: F11 or Start
 - Ctrl alone stops speech, also in the menu.
+
+Main menu:
+- Speech and voice: mod language, speech output (OneCore, SAPI or screen reader), voice for the current language,
+  speech rate, speech volume.
+- Reading: menus, dialogs, chatter, tutorials and pop-ups, room announcement, pickups, money amount.
+- Enemies and fighting: radar, bright click on your line, knock volume, radar range, enemy announcements, attack
+  warning, health sounds, boss health, enemy count button, damage protection.
+- Navigation and guiding: mod functions on the controller, interaction hints, items as targets, dead end hints,
+  pit warning, pause guiding for enemies, run while guiding, open doors.
+- Sounds and volume: orientation sound volume, money sounds, lower the game during speech or sounds, how much,
+  play sounds in the menu, listen to all sounds.
+- Advanced: detailed log, mod menu on every start.
+- Donation, Accessibility Mods by Grybyx, Save and close, Discard and close.
 
 
 KEYS IN GAME
@@ -202,11 +281,12 @@ Keyboard:
 - Shift+F3: active quests with location
 - F5: status; Shift+F5: room with all exits and targets; Ctrl+F5: visible enemies
 - F6: direction to the navigator target; Shift+F6: tone test
-- F8: beacon on/off; Shift+F8 / Ctrl+Shift+F8: next / previous target; Ctrl+F8: guide me to the target
+- F8: beacon on/off; Shift+F8 / Ctrl+Shift+F8: next / previous target; Ctrl+F8: automatic guiding; Alt+F8: guided navigation
 - F11: mod menu; Ctrl+F12: scene log (troubleshooting)
 
 Controller (can be turned off in the mod menu, only during gameplay):
-- Press right stick briefly: guide me to the target on/off
+- Press right stick briefly: guided navigation on/off (you walk, tone and hints show the way)
+- Press left stick: automatic guiding on/off
 - Hold right stick: beacon on/off
 - Right stick up / down: previous / next target
 - Right stick left: room with all exits
@@ -218,7 +298,7 @@ FINDING THE WAY UP OR DOWN
 Exits are often at the top (further back) or bottom (front) of a room, or behind doors.
 - Entering a room announces the room name and number of exits.
 - Walking into a boundary plays noise from that side, then the mod tells you the next exit and its direction.
-- Press the right stick (or Ctrl+F8) to be guided to the selected target automatically. Moving the left stick yourself
+- Press the left stick (or Ctrl+F8) to be guided to the selected target automatically. Moving the left stick yourself
   takes over again; an enemy closer than 4 meters pauses guiding.
 - The mod learns rooms and their exits (RCGAccess\raumkarte.txt). Once it knows the way to the location of the
   active quest, the matching exit is called "toward the quest" and listed first.
@@ -227,9 +307,10 @@ Exits are often at the top (further back) or bottom (front) of a room, or behind
 TONES
 - Beacon: short tone from the target direction. Stereo = side, higher = target further up/back, lower = further down/front,
   faster = closer. Triangle for exits, square for the exit toward the quest, sine for shops and people.
-- Enemy knock: soft "tock" of the nearest enemy. Stereo = side, clearly higher = further up, clearly lower =
-  further down, with a bright click = on your line (your attacks hit), faster = closer, quieter = less enemy energy.
-  Bosses knock lower.
+- Enemy radar (echo sounder, since 0.4.0): one tone per beat from the side of the nearest enemy. Low tone = not on
+  your line, high tone = on your line (your attacks hit). Slow = far away, faster and faster = closer. Quieter =
+  less enemy energy, harder sound = armed. Optionally the low tone is a bit higher or lower for enemies up or down.
+- Obstacle (furniture, crate, car): two dull knocks from the side; wall or room boundary: noise.
 - Attack warning: two short, bright, hard tones from the side of an attacking enemy nearby.
 - Enemy defeated: falling triad. Fight area locked: two low hard tones; cleared: rising two-tone.
 - Damage: low squeaky square. Healing: rising tone. Below 30 % health: low double pulse every 2.5 seconds.

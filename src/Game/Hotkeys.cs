@@ -33,6 +33,7 @@ namespace RCGAccess
             if (Input.GetKeyDown(KeyCode.F8) && ModInput.Shift() && !ModInput.CtrlNow()) Navigator.Cycle(1);
             if (Input.GetKeyDown(KeyCode.F8) && ModInput.Shift() && ModInput.CtrlNow()) Navigator.Cycle(-1);
             if (ModInput.KeyCtrl(KeyCode.F8)) Navigator.ToggleWalk();
+            if (Input.GetKeyDown(KeyCode.F8) && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt))) Navigator.ToggleGuide();
             if (ModInput.KeyCtrl(KeyCode.F12)) SceneProtocol();
 
             if (!Settings.PadKeys || !ModInput.PadConnected) return;
@@ -45,14 +46,16 @@ namespace RCGAccess
             }
             Bindings.Btn? cb = Bindings.CountButton();
             if (cb.HasValue && Bindings.Pressed(cb.Value)) Speech.Say(Combat.EnemyCountText(), true);
-            // right stick: short press = guide me there, hold = beacon on/off (the left stick press is the game's taunt)
+            // right stick: short press = guided navigation (tones and hints), hold = beacon on/off
+            // left stick press = automatic guiding (instead of the game's taunt, see Settings.LsWalk)
             if (ModInput.PadDown(Pad.RS)) { _rsDown = Time.realtimeSinceStartup; _rsHoldDone = false; }
             if (ModInput.PadHeld(Pad.RS) && !_rsHoldDone && Time.realtimeSinceStartup - _rsDown >= 0.6f) { _rsHoldDone = true; Navigator.ToggleBeacon(); }
             if (!ModInput.PadHeld(Pad.RS) && _rsDown > 0f)
             {
-                if (!_rsHoldDone) Navigator.ToggleWalk();
+                if (!_rsHoldDone) { if (Settings.LsWalk) Navigator.ToggleGuide(); else Navigator.ToggleWalk(); }
                 _rsDown = 0f;
             }
+            if (Settings.LsWalk && ModInput.PadDown(Pad.LS)) Navigator.ToggleWalk();
             switch (ModInput.RightStickFlick())
             {
                 case StickDir.Up: Navigator.Cycle(-1); break;

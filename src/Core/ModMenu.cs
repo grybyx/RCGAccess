@@ -63,6 +63,14 @@ namespace RCGAccess
             }
         }
 
+        private class SubMenu : Entry
+        {
+            public List<Entry> Children;
+            public override string Value() { return ""; }
+            public override void Activate() { Enter(this); }
+            public override bool IsAction { get { return true; } }
+        }
+
         private class ActionEntry : Entry
         {
             public Action Run;
@@ -71,7 +79,9 @@ namespace RCGAccess
             public override bool IsAction { get { return true; } }
         }
 
-        private static readonly List<Entry> _entries = new List<Entry>();
+        private static readonly List<Entry> _root = new List<Entry>();
+        private static List<Entry> _entries = _root;
+        private static readonly List<KeyValuePair<List<Entry>, int>> _stack = new List<KeyValuePair<List<Entry>, int>>();
         private static int _index;
         private static bool _open;
         private static bool _closing;
@@ -88,50 +98,56 @@ namespace RCGAccess
 
         private static void Build()
         {
-            _entries.Clear();
-            _entries.Add(new Choice
+            _root.Clear();
+            _stack.Clear();
+            List<Entry> speech = new List<Entry>();
+            speech.Add(new Choice
             {
                 Key = "m_modlang",
                 Options = delegate { return new List<string> { Loc.T("lang_auto"), "Deutsch", "English" }; },
                 Get = delegate { return Settings.ModLang; },
                 Set = delegate (int v) { Settings.ModLang = v; Speech.ApplyLanguage(true); }
             });
-            _entries.Add(new Choice
+            speech.Add(new Choice
             {
                 Key = "m_speech",
                 Options = delegate { return new List<string> { Loc.T("speech_onecore"), Loc.T("speech_sapi"), Loc.T("speech_reader") }; },
                 Get = delegate { return Settings.SpeechEngine; },
                 Set = delegate (int v) { Settings.SpeechEngine = v; Speech.EnsureEngine(); }
             });
-            _entries.Add(VoiceChoice("m_voice_de", 0x07, true));
-            _entries.Add(VoiceChoice("m_voice_en", 0x09, false));
-            _entries.Add(new Number
+            speech.Add(VoiceChoice());
+            speech.Add(new Number
             {
                 Key = "m_rate", Min = -5, Max = 10, Step = 1,
                 Get = delegate { return Settings.Rate; },
                 Set = delegate (int v) { Settings.Rate = v; Speech.Config("rate", v.ToString()); }
             });
-            _entries.Add(new Number
+            speech.Add(new Number
             {
                 Key = "m_speechvol", Min = 10, Max = 100, Step = 10, Unit = "%",
                 Get = delegate { return Settings.SpeechVolume; },
                 Set = delegate (int v) { Settings.SpeechVolume = v; Speech.Config("volume", v.ToString()); }
             });
-            _entries.Add(new Choice
+
+            List<Entry> texts = new List<Entry>();
+            Add(texts, "m_menus", () => Settings.Menus, v => Settings.Menus = v);
+            Add(texts, "m_dialogs", () => Settings.Dialogs, v => Settings.Dialogs = v);
+            Add(texts, "m_chatter", () => Settings.Chatter, v => Settings.Chatter = v);
+            Add(texts, "m_hints", () => Settings.Hints, v => Settings.Hints = v);
+            Add(texts, "m_room", () => Settings.RoomAnnounce, v => Settings.RoomAnnounce = v);
+            Add(texts, "m_pickupspeak", () => Settings.PickupSpeak, v => Settings.PickupSpeak = v, delegate { Samples.Pickup(0); });
+            Add(texts, "m_moneyspeak", () => Settings.MoneySpeak, v => Settings.MoneySpeak = v);
+
+            List<Entry> fight = new List<Entry>();
+            Add(fight, "m_radar", () => Settings.Radar, v => Settings.Radar = v, delegate { Samples.Knock(0); });
+            Add(fight, "m_linetone", () => Settings.LineTone, v => Settings.LineTone = v, delegate { Samples.Line(0); });
+            Add(fight, "m_radarheight", () => Settings.RadarHeight, v => Settings.RadarHeight = v, delegate
             {
-                Key = "m_damage",
-                Options = delegate { return new List<string> { Loc.T("off"), Loc.T("dmg_half"), Loc.T("dmg_none") }; },
-                Get = delegate { return Settings.DamageHelp; },
-                Set = delegate (int v) { Settings.DamageHelp = v; }
+                float kv = Settings.KnockVolume / 100f;
+                Speech.RawTone(Combat.LowPitch * 1.22f, 60, 0, kv, 0, Combat.LowPitch, 0);
+                Speech.RawTone(Combat.LowPitch * 0.8f, 60, 0, kv, 0, Combat.LowPitch * 0.68f, 500);
             });
-            AddToggle("m_menus", () => Settings.Menus, v => Settings.Menus = v);
-            AddToggle("m_dialogs", () => Settings.Dialogs, v => Settings.Dialogs = v);
-            AddToggle("m_chatter", () => Settings.Chatter, v => Settings.Chatter = v);
-            AddToggle("m_hints", () => Settings.Hints, v => Settings.Hints = v);
-            AddToggle("m_interact", () => Settings.Interact, v => Settings.Interact = v, delegate { Samples.Interact(0); });
-            AddToggle("m_radar", () => Settings.Radar, v => Settings.Radar = v, delegate { Samples.Knock(0); });
-            AddToggle("m_linetone", () => Settings.LineTone, v => Settings.LineTone = v, delegate { Samples.Line(0); });
-            _entries.Add(new Number
+            fight.Add(new Number
             {
                 Key = "m_knockvol", Min = 0, Max = 200, Step = 10, Unit = "%",
                 Get = delegate { return Settings.KnockVolume; },
@@ -139,22 +155,18 @@ namespace RCGAccess
                 Preview = delegate { Combat.PreviewKnock(); },
                 Sample = delegate { Combat.PreviewKnock(); }
             });
-            _entries.Add(new Number
+            fight.Add(new Number
             {
                 Key = "m_radarrange", Min = 4, Max = 20, Step = 1, Unit = Loc.T("unit_m"),
                 Get = delegate { return Settings.RadarRange; },
                 Set = delegate (int v) { Settings.RadarRange = v; }
             });
-            AddToggle("m_enemyannounce", () => Settings.EnemyAnnounce, v => Settings.EnemyAnnounce = v, delegate { Samples.Fight(0); });
-            AddToggle("m_attackwarn", () => Settings.AttackWarn, v => Settings.AttackWarn = v, delegate { Samples.Attack(0); });
-            AddToggle("m_health", () => Settings.HealthTones, v => Settings.HealthTones = v, delegate { Samples.Health(0); });
-            AddToggle("m_boss", () => Settings.BossHealth, v => Settings.BossHealth = v);
-            AddToggle("m_room", () => Settings.RoomAnnounce, v => Settings.RoomAnnounce = v);
-            AddToggle("m_deadend", () => Settings.DeadEnd, v => Settings.DeadEnd = v, delegate { Samples.Wall(0); });
-            AddToggle("m_hazards", () => Settings.Hazards, v => Settings.Hazards = v, delegate { Samples.Pit(0); Samples.Toy(700); });
-            AddToggle("m_pickupspeak", () => Settings.PickupSpeak, v => Settings.PickupSpeak = v, delegate { Samples.Pickup(0); });
-            AddToggle("m_itemnav", () => Settings.ItemNav, v => Settings.ItemNav = v, delegate { Samples.ItemAppears(0); });
-            _entries.Add(new Choice
+            Add(fight, "m_enemyannounce", () => Settings.EnemyAnnounce, v => Settings.EnemyAnnounce = v, delegate { Samples.Fight(0); });
+            Add(fight, "m_attackwarn", () => Settings.AttackWarn, v => Settings.AttackWarn = v, delegate { Samples.Attack(0); });
+            Add(fight, "m_health", () => Settings.HealthTones, v => Settings.HealthTones = v, delegate { Samples.Health(0); });
+            Add(fight, "m_boss", () => Settings.BossHealth, v => Settings.BossHealth = v);
+            Add(fight, "m_recruitinfo", () => Settings.RecruitInfo, v => Settings.RecruitInfo = v, delegate { Speech.Tone(392, 80, 0, 0.7f, 1, 392, 0); Speech.Tone(587, 140, 0, 0.7f, 1, 784, 85); Speech.Tone(784, 70, 0, 0.5f, 0, 1046, 800); });
+            fight.Add(new Choice
             {
                 Key = "m_countbtn",
                 Options = delegate
@@ -166,9 +178,27 @@ namespace RCGAccess
                 Get = delegate { return Settings.EnemyCountButton; },
                 Set = delegate (int v) { Settings.EnemyCountButton = v; }
             });
-            AddToggle("m_moneytones", () => Settings.MoneyTones, v => Settings.MoneyTones = v, delegate { Samples.Money(0); });
-            AddToggle("m_moneyspeak", () => Settings.MoneySpeak, v => Settings.MoneySpeak = v);
-            _entries.Add(new Number
+            fight.Add(new Choice
+            {
+                Key = "m_damage",
+                Options = delegate { return new List<string> { Loc.T("off"), Loc.T("dmg_half"), Loc.T("dmg_none") }; },
+                Get = delegate { return Settings.DamageHelp; },
+                Set = delegate (int v) { Settings.DamageHelp = v; }
+            });
+
+            List<Entry> nav = new List<Entry>();
+            Add(nav, "m_padkeys", () => Settings.PadKeys, v => Settings.PadKeys = v);
+            Add(nav, "m_lswalk", () => Settings.LsWalk, v => Settings.LsWalk = v);
+            Add(nav, "m_interact", () => Settings.Interact, v => Settings.Interact = v, delegate { Samples.Interact(0); });
+            Add(nav, "m_itemnav", () => Settings.ItemNav, v => Settings.ItemNav = v, delegate { Samples.ItemAppears(0); });
+            Add(nav, "m_deadend", () => Settings.DeadEnd, v => Settings.DeadEnd = v, delegate { Samples.Wall(0); Samples.Obstacle(700); });
+            Add(nav, "m_hazards", () => Settings.Hazards, v => Settings.Hazards = v, delegate { Samples.Pit(0); Samples.Toy(700); });
+            Add(nav, "m_autowalkstop", () => Settings.AutoWalkStopForEnemies, v => Settings.AutoWalkStopForEnemies = v);
+            Add(nav, "m_walkrun", () => Settings.WalkRun, v => Settings.WalkRun = v);
+            Add(nav, "m_autodoor", () => Settings.AutoDoor, v => Settings.AutoDoor = v);
+
+            List<Entry> sound = new List<Entry>();
+            sound.Add(new Number
             {
                 Key = "m_tonevol", Min = 0, Max = 100, Step = 10, Unit = "%",
                 Get = delegate { return Settings.ToneVolume; },
@@ -176,36 +206,72 @@ namespace RCGAccess
                 Preview = delegate { Navigator.PreviewBeacon(); },
                 Sample = delegate { Samples.Beacon(0); }
             });
-            AddToggle("m_padkeys", () => Settings.PadKeys, v => Settings.PadKeys = v);
-            AddToggle("m_autowalkstop", () => Settings.AutoWalkStopForEnemies, v => Settings.AutoWalkStopForEnemies = v);
-            AddToggle("m_walkrun", () => Settings.WalkRun, v => Settings.WalkRun = v);
-            AddToggle("m_autodoor", () => Settings.AutoDoor, v => Settings.AutoDoor = v);
-            AddToggle("m_duckspeech", () => Settings.DuckSpeech, v => Settings.DuckSpeech = v);
-            AddToggle("m_ducktones", () => Settings.DuckTones, v => Settings.DuckTones = v);
-            _entries.Add(new Number
+            Add(sound, "m_moneytones", () => Settings.MoneyTones, v => Settings.MoneyTones = v, delegate { Samples.Money(0); });
+            Add(sound, "m_duckspeech", () => Settings.DuckSpeech, v => Settings.DuckSpeech = v);
+            Add(sound, "m_ducktones", () => Settings.DuckTones, v => Settings.DuckTones = v);
+            sound.Add(new Number
             {
                 Key = "m_ducklevel", Min = 0, Max = 100, Step = 10, Unit = "%",
                 Get = delegate { return Settings.DuckLevel; },
                 Set = delegate (int v) { Settings.DuckLevel = v; }
             });
-            AddToggle("m_menusamples", () => Settings.MenuSamples, v => Settings.MenuSamples = v);
-            _entries.Add(new ActionEntry { Key = "m_tonetest", Run = delegate { Samples.All(); } });
-            AddToggle("m_verbose", () => Settings.VerboseLog, v => Settings.VerboseLog = v);
-            AddToggle("m_everystart", () => Settings.MenuEveryStart, v => Settings.MenuEveryStart = v);
-            _entries.Add(new ActionEntry { Key = "m_donation", Run = delegate { OpenUrl("https://buymeacoffee.com/blindretrogamer/", Loc.T("m_donation")); } });
-            _entries.Add(new ActionEntry { Key = "m_grybyx", Run = delegate { OpenUrl("https://github.com/grybyx/", Loc.T("m_grybyx")); } });
-            _entries.Add(new ActionEntry { Key = "m_save", Run = delegate { Close(true); } });
-            _entries.Add(new ActionEntry { Key = "m_discard", Run = delegate { Close(false); } });
+            Add(sound, "m_menusamples", () => Settings.MenuSamples, v => Settings.MenuSamples = v);
+            sound.Add(new ActionEntry { Key = "m_tonetest", Run = delegate { Samples.All(); } });
+
+            List<Entry> more = new List<Entry>();
+            Add(more, "m_verbose", () => Settings.VerboseLog, v => Settings.VerboseLog = v);
+            Add(more, "m_everystart", () => Settings.MenuEveryStart, v => Settings.MenuEveryStart = v);
+
+            _root.Add(Sub("m_sub_speech", speech));
+            _root.Add(Sub("m_sub_texts", texts));
+            _root.Add(Sub("m_sub_fight", fight));
+            _root.Add(Sub("m_sub_nav", nav));
+            _root.Add(Sub("m_sub_sound", sound));
+            _root.Add(Sub("m_sub_more", more));
+            _root.Add(new ActionEntry { Key = "m_donation", Run = delegate { OpenUrl("https://buymeacoffee.com/blindretrogamer/", Loc.T("m_donation")); } });
+            _root.Add(new ActionEntry { Key = "m_grybyx", Run = delegate { OpenUrl("https://github.com/grybyx/", Loc.T("m_grybyx")); } });
+            _root.Add(new ActionEntry { Key = "m_save", Run = delegate { Close(true); } });
+            _root.Add(new ActionEntry { Key = "m_discard", Run = delegate { Close(false); } });
+            _entries = _root;
         }
 
-        private static void AddToggle(string key, Func<bool> get, Action<bool> set)
+        private static SubMenu Sub(string key, List<Entry> children)
         {
-            _entries.Add(new Toggle { Key = key, Get = get, Set = set });
+            children.Add(new ActionEntry { Key = "m_back", Run = delegate { Back(); } });
+            return new SubMenu { Key = key, Children = children };
         }
 
-        private static void AddToggle(string key, Func<bool> get, Action<bool> set, Action sample)
+        private static void Add(List<Entry> list, string key, Func<bool> get, Action<bool> set)
         {
-            _entries.Add(new Toggle { Key = key, Get = get, Set = set, Sample = sample });
+            list.Add(new Toggle { Key = key, Get = get, Set = set });
+        }
+
+        private static void Add(List<Entry> list, string key, Func<bool> get, Action<bool> set, Action sample)
+        {
+            list.Add(new Toggle { Key = key, Get = get, Set = set, Sample = sample });
+        }
+
+        /// <summary>Opens a submenu.</summary>
+        private static void Enter(SubMenu m)
+        {
+            _stack.Add(new KeyValuePair<List<Entry>, int>(_entries, _index));
+            _entries = m.Children;
+            _index = 0;
+            Speech.Say(Loc.T(m.Key), true);
+            SpeakEntry(false);
+        }
+
+        /// <summary>Back to the parent menu; false at the top level.</summary>
+        private static bool Back()
+        {
+            if (_stack.Count == 0) return false;
+            KeyValuePair<List<Entry>, int> top = _stack[_stack.Count - 1];
+            _stack.RemoveAt(_stack.Count - 1);
+            _entries = top.Key;
+            _index = top.Value;
+            Speech.MenuClick();
+            SpeakEntry(true);
+            return true;
         }
 
         // the example sound waits until the entry has been read
@@ -243,22 +309,25 @@ namespace RCGAccess
             return list;
         }
 
-        private static Entry VoiceChoice(string key, int prim, bool german)
+        /// <summary>The voice for the language the mod speaks now (game language or the fixed mod language).</summary>
+        private static Entry VoiceChoice()
         {
+            Func<int> prim = delegate { return Speech.VoiceLcid() & 0x3FF; };
             Func<List<string>> names = delegate
             {
                 List<string> o = new List<string> { Loc.T("voice_auto") };
+                if (Settings.SpeechEngine == 2) return o; // the screen reader keeps its own voice
                 foreach (KeyValuePair<string, int> v in ReadVoices())
-                    if ((v.Value & 0x3FF) == prim) o.Add(v.Key);
+                    if ((v.Value & 0x3FF) == prim()) o.Add(v.Key);
                 return o;
             };
             return new Choice
             {
-                Key = key,
+                Key = "m_voice",
                 Options = names,
                 Get = delegate
                 {
-                    string cur = Speech.PreferredVoice(german);
+                    string cur = Speech.PreferredVoice(prim());
                     List<string> o = names();
                     int i = string.IsNullOrEmpty(cur) ? 0 : o.IndexOf(cur);
                     return i < 0 ? 0 : i;
@@ -267,10 +336,17 @@ namespace RCGAccess
                 {
                     List<string> o = names();
                     string v = (i <= 0 || i >= o.Count) ? "" : o[i];
-                    Speech.SetPreferredVoice(german, v);
+                    Speech.SetPreferredVoice(prim(), v);
                     Speech.ApplyLanguage(true);
                 }
             };
+        }
+
+        private static string LanguageName(int prim)
+        {
+            if (prim == 0x07) return Loc.T("lang_de");
+            if (prim == 0x09) return Loc.T("lang_en");
+            try { return new System.Globalization.CultureInfo(prim).DisplayName; } catch { return prim.ToString("X"); }
         }
 
         private static void OpenUrl(string url, string name)
@@ -376,7 +452,12 @@ namespace RCGAccess
         }
 
         // ---------------- input ----------------
-        private static string EntryName(Entry e) { return Loc.T(e.Key); }
+        private static string EntryName(Entry e)
+        {
+            if (e is SubMenu) return Loc.T(e.Key) + ", " + Loc.T("submenu");
+            if (e.Key == "m_voice") return Loc.T("m_voice", LanguageName(Speech.VoiceLcid() & 0x3FF));
+            return Loc.T(e.Key);
+        }
 
         private static void SpeakEntry(bool interrupt)
         {
@@ -434,7 +515,7 @@ namespace RCGAccess
             }
             else if (ModInput.Key(KeyCode.Backspace) || ModInput.Key(KeyCode.Escape) || ModInput.PadDown(Pad.B))
             {
-                Close(false);
+                if (!Back()) Close(false);
             }
             else if (ModInput.Key(KeyCode.F11) || ModInput.PadDown(Pad.Start))
             {

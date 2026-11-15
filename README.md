@@ -4,7 +4,7 @@
 
 RCGAccess makes the beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) playable for blind and visually impaired players. The mod reads menus, dialogs and pop-ups in the game's language, through the modern Windows OneCore voices, classic SAPI voices or your own screen reader. It adds orientation sounds for enemies, exits, items and health, and a navigator that guides you to doors and goals.
 
-> **Pre-release (beta), 0.3.5.** Tested into the second area (Crosstown). Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
+> **Pre-release (beta), 0.4.1.** Tested into the third area (Shopping district). Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
 
 ## About the game
 
@@ -29,18 +29,22 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
   - Moves: full button sequence of every move.
   - Recruits.
 - **Enemies:**
-  - Radar: a knock comes from the side of the nearest enemy. It gets faster when the enemy is closer and quieter when it has less energy. Higher = enemy further up, lower = further down, bright click = enemy on your line.
+  - Radar as an echo sounder: one tone from the side of the nearest enemy, slow when far away, faster and faster as it comes closer. Low tone = not on your line, high tone = on your line (your attacks hit). Quieter = less energy.
   - Attack warning, triad on defeat, enemy count on a button.
+  - Recruits: calling your helper (LT) is announced with its hearts, or why it cannot come yet.
   - Armed and begging enemies are announced, with help for recruiting.
 - **Navigator:**
   - Beacon tones to exits, doors, shops, people and items. The right stick selects the target.
-  - Guided walking with a path finder; runs on long stretches, jumps onto furniture and steps when needed and can walk straight through the door.
+  - Guided navigation (right stick press): you walk yourself; a guide tone from the side to walk to (lower = you are too far down, higher = too far up) and spoken hints for every stretch, jumps and abysses.
+  - Automatic guiding (left stick press) with a path finder; runs on long stretches, jumps onto furniture and across abysses with a run-up, climbs, and can walk straight through the door.
+  - Quest areas (walk-in spots that start a conversation) and Sabu statues are targets too.
+  - Walls and obstacles sound different.
   - Dead end hints ("You can't go further right …").
   - The mod learns a room map and finds the way to the quest from the map markers.
 - **Health and pickups:** tones for damage, healing and low health. Pickups and money are announced. Boss health is announced in steps.
 - **Shops:** your money is announced on opening and after each purchase; items you cannot afford are marked.
 - **Damage protection** (optional): half damage or invulnerable.
-- **Mod menu (F11):** every feature can be switched on or off, features with their own sound play it, "Listen to all sounds" explains all sounds. It opens on the first start, before the game begins.
+- **Mod menu (F11)** with submenus: every feature can be switched on or off, features with their own sound play it, "Listen to all sounds" explains all sounds. It opens on the first start, before the game begins.
 
 ## Installation
 
@@ -56,7 +60,8 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
 
 | Controller | Function |
 | --- | --- |
-| Press right stick briefly | Guide me to the target on/off |
+| Press right stick briefly | Guided navigation on/off (you walk) |
+| Press left stick | Automatic guiding on/off (instead of the game's taunt, switchable) |
 | Hold right stick | Beacon on/off |
 | Right stick up / down | Previous / next target |
 | Right stick left / right | Room with exits / status |
@@ -70,7 +75,7 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
 | Shift+F3 | Active quests with location |
 | F5 / Shift+F5 / Ctrl+F5 | Status / room with exits / enemies |
 | F6 / Shift+F6 | Direction to target / tone test |
-| F8 / Ctrl+F8 | Beacon / guided walking |
+| F8 / Ctrl+F8 / Alt+F8 | Beacon / automatic guiding / guided navigation |
 
 The full manual is included in the download: `RCGAccess_README_EN.txt` (English) and `RCGAccess_LIESMICH.txt` (German).
 
@@ -99,7 +104,7 @@ After playing, run `RCGAccess_Daten_sammeln.bat` in the game folder. It puts a Z
 
 RCGAccess macht das Beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) für blinde und sehbehinderte Spielerinnen und Spieler spielbar. Der Mod liest Menüs, Dialoge und Einblendungen in der Sprache des Spiels vor, wahlweise mit den modernen Windows-Stimmen (OneCore), klassischen SAPI-Stimmen oder über deinen Screenreader. Dazu kommen Orientierungstöne für Gegner, Ausgänge, Gegenstände und Gesundheit sowie ein Navigator, der dich zu Türen und Zielen führt.
 
-> **Vorabversion (Beta), 0.3.5.** Getestet ist das Spiel bis in das zweite Gebiet (Crosstown). Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
+> **Vorabversion (Beta), 0.4.1.** Getestet ist das Spiel bis in das dritte Gebiet (Einkaufsviertel). Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
 
 ## Über das Spiel
 
@@ -124,18 +129,22 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
   - Bewegungen: komplette Tastenfolge jeder Technik.
   - Rekruten.
 - **Gegner:**
-  - Radar: Ein Klopfen kommt von der Seite des nächsten Gegners. Es wird schneller, je näher er ist, und leiser, je weniger Energie er hat. Höher = Gegner weiter oben, tiefer = weiter unten, heller Klick = Gegner auf deiner Linie.
+  - Radar als Echolot: ein Ton von der Seite des nächsten Gegners, langsam, wenn er weit weg ist, immer schneller, je näher er kommt. Tiefer Ton = nicht auf deiner Linie, hoher Ton = auf deiner Linie (deine Angriffe treffen). Leiser = weniger Energie.
   - Angriffswarnung, Dreiklang beim Sieg, Ansage der Anzahl auf Knopfdruck.
+  - Rekruten: Das Herbeirufen (LT) wird mit Herzen angesagt, oder warum er noch nicht kommen kann.
   - Bewaffnete und bettelnde Gegner werden angesagt, mit Hilfe beim Rekrutieren.
 - **Navigator:**
   - Peiltöne zu Ausgängen, Türen, Läden, Personen und Gegenständen. Der rechte Stick wählt das Ziel.
-  - Automatisches Hinführen mit Wegfinder; rennt auf langen Strecken, springt bei Bedarf auf Möbel und Stufen und geht auf Wunsch direkt durch die Tür.
+  - Geführte Navigation (rechten Stick drücken): Du läufst selbst; ein Ortungston aus der Richtung, in die du gehen sollst (tiefer = du bist zu weit unten, höher = zu weit oben), und Ansagen für jedes Wegstück, Sprünge und Abgründe.
+  - Automatisches Hinführen (linken Stick drücken) mit Wegfinder; rennt auf langen Strecken, springt auf Möbel und mit Anlauf über Abgründe, klettert und geht auf Wunsch direkt durch die Tür.
+  - Aufgabenbereiche (Stellen, an denen beim Hineinlaufen ein Gespräch beginnt) und Sabu-Statuen sind ebenfalls Ziele.
+  - Wände und Hindernisse klingen unterschiedlich.
   - Hinweis bei Sackgassen („Hier geht es nicht weiter nach rechts …“).
   - Der Mod lernt eine Raumkarte und erkennt den Weg zur Quest über die Kartenmarkierungen.
 - **Gesundheit und Fundstücke:** Töne bei Schaden, Heilung und niedriger Gesundheit. Ansage von Eingesammeltem und Geld. Bossenergie in Schritten.
 - **Läden:** Ansage des eigenen Geldes beim Öffnen und nach jedem Kauf, zu teure Waren werden genannt.
 - **Schutz vor Schaden** (wählbar): halber Schaden oder unverwundbar.
-- **Mod-Menü (F11):** Alle Funktionen lassen sich einzeln schalten, jede Funktion mit eigenem Ton spielt ihn vor, „Alle Töne anhören“ erklärt alle Töne. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt.
+- **Mod-Menü (F11)** mit Untermenüs: Alle Funktionen lassen sich einzeln schalten, jede Funktion mit eigenem Ton spielt ihn vor, „Alle Töne anhören“ erklärt alle Töne. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt.
 
 ## Installation
 
@@ -151,7 +160,8 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
 
 | Controller | Funktion |
 | --- | --- |
-| Rechten Stick kurz drücken | Zum Ziel hinführen an/aus |
+| Rechten Stick kurz drücken | Geführte Navigation an/aus (du läufst) |
+| Linken Stick drücken | Automatisches Hinführen an/aus (statt Verhöhnung, abschaltbar) |
 | Rechten Stick halten | Peilton an/aus |
 | Rechter Stick hoch / runter | Vorheriges / nächstes Ziel |
 | Rechter Stick links / rechts | Raum mit Ausgängen / Status |
@@ -165,7 +175,7 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
 | Umschalt+F3 | Aktive Quests mit Ort |
 | F5 / Umschalt+F5 / Strg+F5 | Status / Raum mit Ausgängen / Gegner |
 | F6 / Umschalt+F6 | Richtung zum Ziel / Tontest |
-| F8 / Strg+F8 | Peilton / Hinführen |
+| F8 / Strg+F8 / Alt+F8 | Peilton / automatisches Hinführen / geführte Navigation |
 
 Die vollständige Anleitung liegt im Download: `RCGAccess_LIESMICH.txt` (Deutsch) und `RCGAccess_README_EN.txt` (Englisch).
 

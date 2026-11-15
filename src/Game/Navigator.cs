@@ -28,6 +28,8 @@ namespace RCGAccess
             public bool QuestRoute;
             public string ToScene = "";
             public string RoomGoal;          // marked room this target leads to (navigator "room" target)
+            public Collider Area;            // walk-in area (quest trigger): the goal is a point inside it
+            public string Hint;              // own arrival hint
 
             public Vector3 RawPos
             {
@@ -59,6 +61,19 @@ namespace RCGAccess
                         RCG.Player pl = GameInfo.Player;
                         Vector3 cp;
                         if (pl != null && Geometry.ClosestPoint((InteractEntity)Obj, pl.transform.position, out cp)) return cp;
+                    }
+                    // walk-in areas: a reachable point inside
+                    if (Area != null)
+                    {
+                        RCG.Player pl = GameInfo.Player;
+                        Vector3 ip;
+                        if (pl != null && Geometry.InsidePoint(Area, pl.transform.position, out ip)) return ip;
+                    }
+                    // climbing spots: the side of the climbing surface facing the player, at the player's height
+                    if (Kind == Kind.Climb && Obj is Climable)
+                    {
+                        RCG.Player pl = GameInfo.Player;
+                        if (pl != null) return ClimbSpot((Climable)Obj, pl.transform.position);
                     }
                     Vector3 raw = RawPos;
                     float now = Time.realtimeSinceStartup;
@@ -108,6 +123,7 @@ namespace RCGAccess
         private static Target _walkTarget;
         private static float _walkStart;
         private static readonly List<Vector3> _path = new List<Vector3>();
+        private static readonly List<int> _pathJumps = new List<int>();
         private static int _pathIdx;
         private static float _replanAt;
         private static Vector3 _stuckPos;
@@ -127,6 +143,7 @@ namespace RCGAccess
         private static float _hazardSpeechAt;
         private static float _nextHazardScan;
         private static List<Collider> _pits = new List<Collider>();
+        private static readonly HashSet<int> _hazardSpoken = new HashSet<int>();
 
         // interaction hints
         private static readonly Dictionary<int, float> _interactSaid = new Dictionary<int, float>();
@@ -203,6 +220,7 @@ namespace RCGAccess
         public static void OnSceneLoaded(string scene)
         {
             _sceneAt = Time.realtimeSinceStartup;
+            Guide = false; _guideTarget = null;
             _cameDoor = null; _cameDone = false; _cameSaid = false; _cameHeldSince = -1f; _spawnKnown = false;
             PathGrid.OnSceneLoaded();
             try
@@ -297,6 +315,8 @@ namespace RCGAccess
                     if (!cl.isActiveAndEnabled) continue;
                     _targets.Add(new Target { Kind = Kind.Climb, Obj = cl, Name = Loc.T("climb") });
                 }
+                AddQuestAreas();
+                AddSabuStatues();
             }
             catch (Exception e) { Log.Error("BuildTargets", e); }
 
@@ -321,6 +341,7 @@ namespace RCGAccess
 
         private static int Rank(Target t)
         {
+            if (t.Area != null) return _areasEntered.Contains(t.Area.GetInstanceID()) ? 4 : -3;
             if (t.RoomGoal != null) return -1;
             if (t.Kind == Kind.Beggar) return -2;
             if (t.Kind == Kind.Item) return 0;
@@ -330,6 +351,70 @@ namespace RCGAccess
                 return t.QuestRoute ? 1 : (!t.Seen ? 2 : 3);
             }
             return 4;
+        }
+
+        // ---------------- quest areas and Sabu statues ----------------
+        private static readonly HashSet<int> _areasEntered = new HashSet<int>();
+        private static FieldInfo _usesTrigger = typeof(Quest_GivePlayerQuestItem).GetField("_usesTrigger", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        /// <summary>Areas that start something when you walk into them: a dialog (PortraitSceneTrigger) or a quest item.</summary>
+        private static void AddQuestAreas()
+        {
+            HashSet<Collider> seen = new HashSet<Collider>();
+            List<MonoBehaviour> list = new List<MonoBehaviour>();
+            foreach (PortraitSceneTrigger t in UnityEngine.Object.FindObjectsOfType<PortraitSceneTrigger>()) list.Add(t);
+            foreach (Quest_GivePlayerQuestItem q in UnityEngine.Object.FindObjectsOfType<Quest_GivePlayerQuestItem>())
+            {
+                bool trig = false;
+                try { trig = _usesTrigger != null && (bool)_usesTrigger.GetValue(q); } catch { }
+                if (trig) list.Add(q);
+            }
+            foreach (MonoBehaviour mb in list)
+            {
+                if (mb == null || !mb.isActiveAndEnabled) continue;
+                Collider c = mb.GetComponent<Collider>();
+                if (c == null || !c.enabled || !c.isTrigger || !seen.Add(c)) continue;
+                bool entered = _areasEntered.Contains(c.GetInstanceID());
+                _targets.Add(new Target
+                {
+                    Kind = Kind.Thing, Obj = mb, Trigger = c, Area = c,
+                    Name = Loc.T(entered ? "quest_area_done" : "quest_area"),
+                    Hint = " " + Loc.T("hint_area")
+                });
+            }
+        }
+
+        /// <summary>Sabu statues (side quest): destroy them by attacking.</summary>
+        private static void AddSabuStatues()
+        {
+            foreach (DefenseCollider d in UnityEngine.Object.FindObjectsOfType<DefenseCollider>())
+            {
+                if (d == null || !d.isActiveAndEnabled || d.GetComponentInParent<CombatEntity>() != null) continue;
+                Transform r = d.transform;
+                while (r.parent != null && r.name.IndexOf("Sabu", StringComparison.OrdinalIgnoreCase) < 0) r = r.parent;
+                if (r.name.IndexOf("Sabu", StringComparison.OrdinalIgnoreCase) < 0 || !r.gameObject.activeInHierarchy) continue;
+                bool dup = false;
+                foreach (Target t in _targets) if (t.Obj != null && t.Obj.transform == r) { dup = true; break; }
+                if (dup) continue;
+                _targets.Add(new Target { Kind = Kind.Thing, Obj = r, Name = Loc.T("sabu_statue"), Hint = " " + Loc.T("hint_sabu") });
+            }
+        }
+
+        /// <summary>Called every frame: notes walk-in areas the player has entered.</summary>
+        private static void CheckAreas(Vector3 pp)
+        {
+            foreach (Target t in _targets)
+            {
+                if (t.Area == null || _areasEntered.Contains(t.Area.GetInstanceID())) continue;
+                Bounds b = t.Area.bounds;
+                if (!b.Contains(new Vector3(pp.x, Mathf.Clamp(pp.y + 1f, b.min.y, b.max.y), pp.z))) continue;
+                Vector3 cp;
+                try { cp = Physics.ClosestPoint(pp + Vector3.up, t.Area, t.Area.transform.position, t.Area.transform.rotation); } catch { cp = pp; }
+                if ((cp - (pp + Vector3.up)).sqrMagnitude > 0.01f) continue;
+                _areasEntered.Add(t.Area.GetInstanceID());
+                t.Name = Loc.T("quest_area_done");
+                Log.Write("Aufgabenbereich betreten: " + GameInfo.Path(t.Area.transform));
+            }
         }
 
         // ---------------- locked doors ----------------
@@ -413,6 +498,22 @@ namespace RCGAccess
             f.agentTypeID = _agentType;
             f.areaMask = NavMesh.AllAreas;
             return f;
+        }
+
+        /// <summary>Point of a climbing surface's bounds nearest to the player, at the player's height.</summary>
+        public static Vector3 ClimbSpot(Climable c, Vector3 from)
+        {
+            Bounds b;
+            try { b = c.Bounds(); } catch { return c.transform.position; }
+            float x = b.size.x > 0.8f ? Mathf.Clamp(from.x, b.min.x + 0.4f, b.max.x - 0.4f) : b.center.x;
+            float z = Mathf.Clamp(from.z, b.min.z, b.max.z);
+            return new Vector3(x, from.y, z);
+        }
+
+        /// <summary>True if the player stands above the middle of the climbing surface (climbs down).</summary>
+        private static bool ClimbFromTop(Climable c, Vector3 pos)
+        {
+            try { return pos.y > c.Bounds().center.y; } catch { return false; }
         }
 
         public static Vector3 Walkable(Vector3 p)
@@ -654,7 +755,9 @@ namespace RCGAccess
 
             Target t = Current;
             Vector3 pp = p.transform.position;
-            if (_beacon && t != null)
+            try { CheckAreas(pp); } catch { }
+            if (Guide) UpdateGuide(p, now);
+            else if (_beacon && t != null)
             {
                 float dist = Vector3.Distance(new Vector3(pp.x, 0, pp.z), new Vector3(t.Pos.x, 0, t.Pos.z));
                 if (dist < 1.0f)
@@ -690,6 +793,7 @@ namespace RCGAccess
 
         private static string ArrivalHint(Target t)
         {
+            if (t.Hint != null) return t.Hint;
             if (t.Locked) return " " + Loc.T("door_locked_long");
             switch (t.Kind)
             {
@@ -710,6 +814,176 @@ namespace RCGAccess
                         return " " + Loc.T(hold ? "hint_hold" : "hint_press", GameInfo.ButtonName(2));
                     }
             }
+        }
+
+
+        // ---------------- guided navigation (the player walks, tones and hints show the way) ----------------
+        public static bool Guide;
+        private static Target _guideTarget;
+        private static readonly List<Vector3> _gPath = new List<Vector3>();
+        private static readonly List<int> _gJumps = new List<int>();
+        private static int _gIdx;
+        private static float _gReplanAt, _gToneAt, _gSaidAt, _gJumpSaidAt, _gEdgeToneAt, _gBlockedSaidAt = -100f;
+        private static Vector3 _gSaidWp = new Vector3(9999, 0, 9999);
+        private static string _gLastHint;
+
+        /// <summary>Right stick press / Alt+F8: guided navigation to the selected target on or off.</summary>
+        public static void ToggleGuide()
+        {
+            if (Guide) { StopGuide(Loc.T("guide_off")); return; }
+            if (AutoWalk) StopWalk(null);
+            if (_targets.Count == 0) BuildTargets();
+            Target t = Current;
+            RCG.Player p = GameInfo.Player;
+            if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
+            if (t.Obj != null && t.Obj == _cameDoor) { _cameDoor = null; _cameDone = true; }
+            Guide = true;
+            _guideTarget = t;
+            _gPath.Clear(); _gJumps.Clear(); _gIdx = 0;
+            _gReplanAt = 0; _gToneAt = 0; _gSaidAt = Time.realtimeSinceStartup; _gJumpSaidAt = -10f;
+            _gSaidWp = new Vector3(9999, 0, 9999);
+            _gLastHint = null;
+            _arrivedSaid = false;
+            Log.Write("Gefuehrt zu " + t.Label() + " ab " + p.transform.position.ToString("F2"));
+            Speech.Say(Loc.T("guide_on", t.Label(), GameInfo.Direction(p.transform.position, t.Pos)), true);
+        }
+
+        public static void StopGuide(string say)
+        {
+            Guide = false;
+            _guideTarget = null;
+            _gPath.Clear();
+            if (say != null) Speech.Say(say, true);
+        }
+
+        private static bool GuideArrived(Target t, Vector3 pos)
+        {
+            Component c = t.Obj;
+            bool interact = (t.Kind == Kind.Exit && !t.IsEdge && t.Door != null) || t.Kind == Kind.Climb
+                || ((t.Kind == Kind.Person || t.Kind == Kind.Shop || t.Kind == Kind.Thing) && t.Obj is InteractEntity && !(t.Obj is PickupObject));
+            if (interact && c != null && InRange(c)) return true;
+            if (t.Kind == Kind.Climb && GameInfo.Player != null && GameInfo.Player.Climb != null && GameInfo.Player.Climb.TouchingClimbSurface) return true;
+            float dx = t.Pos.x - pos.x, dz = t.Pos.z - pos.z;
+            return !interact && dx * dx + dz * dz < 0.8f * 0.8f;
+        }
+
+        private static void UpdateGuide(RCG.Player p, float now)
+        {
+            Target t = _guideTarget;
+            if (t == null || t.Obj == null || !t.Obj.gameObject.activeInHierarchy)
+            {
+                bool picked = t != null && t.Kind == Kind.Item;
+                StopGuide(picked ? null : Loc.T("guide_lost"));
+                return;
+            }
+            Vector3 pos = p.transform.position;
+            Vector3 goal = t.Pos;
+            if (GuideArrived(t, pos))
+            {
+                StopGuide(null);
+                Speech.Tone(392, 250, 0, 0.7f, 0, 784, 0);
+                _arrivedSaid = true;
+                _arrivedObj = t.Obj;
+                string text = t.Kind == Kind.Exit && t.IsEdge ? Loc.T("guide_edge", t.Label(), EdgeWord(t.Dir)) : Loc.T("arrived", t.Label()) + ArrivalHint(t);
+                SayArrival(text);
+                Log.Write("Gefuehrt angekommen bei " + pos.ToString("F2"));
+                return;
+            }
+            bool inAir = false;
+            try { inAir = p.Fsm != null && (p.Fsm.IsCurrentState<PlayerJump>() || p.Fsm.IsCurrentState<PlayerFall>() || p.Climb.IsClimbing); } catch { }
+            if ((now >= _gReplanAt || _gPath.Count == 0) && !inAir)
+            {
+                _gReplanAt = now + 1f;
+                _gPath.Clear(); _gJumps.Clear(); _gIdx = 0;
+                PathGrid.Ignore = t.Obj != null ? t.Obj.transform : null;
+                List<Vector3> way = PathGrid.Find(p, pos, goal);
+                if (way != null && way.Count > 0) { _gPath.AddRange(way); _gJumps.AddRange(PathGrid.LastJumps); }
+                Vector3 last = _gPath.Count > 0 ? _gPath[_gPath.Count - 1] : pos;
+                if (_gPath.Count > 0 && (Mathf.Abs(last.x - goal.x) < 0.6f && Mathf.Abs(last.z - goal.z) < 0.6f)) _gPath[_gPath.Count - 1] = new Vector3(goal.x, pos.y, goal.z);
+                else
+                {
+                    if (_gPath.Count > 0 && now - _gBlockedSaidAt > 20f) { _gBlockedSaidAt = now; Speech.Say(Loc.T("guide_partial"), false); Log.Write("Gefuehrt: kein ganzer Weg, Teilweg bis " + last.ToString("F2")); }
+                    _gPath.Add(new Vector3(goal.x, pos.y, goal.z));
+                }
+            }
+            // the waypoint to head for: skip the ones already reached
+            while (_gIdx < _gPath.Count - 1 && Mathf.Abs(_gPath[_gIdx].x - pos.x) < 0.35f && Mathf.Abs(_gPath[_gIdx].z - pos.z) < 0.25f) _gIdx++;
+            Vector3 w = _gPath[Mathf.Min(_gIdx, _gPath.Count - 1)];
+            float dx = w.x - pos.x, dz = w.z - pos.z;
+            float gdx = goal.x - pos.x, gdz = goal.z - pos.z;
+            float gdist = Mathf.Sqrt(gdx * gdx + gdz * gdz);
+            bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar;
+
+            // spoken hints: a new stretch of the way, and jumps
+            bool landing = _gJumps.Contains(_gIdx);
+            bool nextLanding = _gJumps.Contains(_gIdx + 1);
+            if ((landing || nextLanding) && now - _gJumpSaidAt > 8f && !enemyClose)
+            {
+                Vector3 edge = landing ? pos : _gPath[_gIdx];
+                float toEdge = Mathf.Abs(edge.x - pos.x) + Mathf.Abs(edge.z - pos.z);
+                if (landing || toEdge < 2f)
+                {
+                    int li = landing ? _gIdx : _gIdx + 1;
+                    Vector3 land = _gPath[Mathf.Min(li, _gPath.Count - 1)];
+                    Vector3 take = li > 0 ? _gPath[li - 1] : pos;
+                    _gJumpSaidAt = now;
+                    _gSaidAt = now;
+                    Speech.Say(Loc.T("guide_gap", Loc.T(land.x > take.x ? "dir_right" : "dir_left"), GameInfo.Meters(Mathf.Abs(land.x - take.x))), true);
+                }
+            }
+            // at the edge before a jump: high double tone = jump now
+            if (landing && !inAir && Mathf.Abs(dx) > 0.3f)
+            {
+                int hs = dx > 0 ? 1 : -1;
+                if (EdgeDistance(pos, hs) < 0.5f && now - _gEdgeToneAt > 0.4f)
+                {
+                    _gEdgeToneAt = now;
+                    Speech.Tone(1400, 50, GameInfo.Pan(hs, 1f) * 0.6f, 0.8f, 1, 1400, 0);
+                    Speech.Tone(1870, 70, GameInfo.Pan(hs, 1f) * 0.6f, 0.8f, 1, 1870, 70);
+                }
+            }
+            if (!inAir && (Mathf.Abs(dx) > 0.12f || Mathf.Abs(dz) > 0.1f))
+            {
+                Vector3 dir = new Vector3(dx, 0, dz).normalized;
+                Vector3 near = pos + new Vector3(dir.x * 0.6f, 0, dir.z * 0.4f);
+                float top = PathGrid.SurfaceY(near.x, near.z, pos.y);
+                if (!float.IsNaN(top) && top > pos.y + 0.3f && now - _gJumpSaidAt > 4f && !enemyClose)
+                {
+                    _gJumpSaidAt = now;
+                    _gSaidAt = now;
+                    Speech.Say(Loc.T("guide_step"), true);
+                }
+            }
+            if ((w - _gSaidWp).sqrMagnitude > 1f && now - _gSaidAt > 1.2f && !enemyClose)
+            {
+                string hint = GuideHint(dx, dz);
+                if (hint != null && (hint != _gLastHint || now - _gSaidAt > 6f))
+                {
+                    _gSaidWp = w;
+                    _gSaidAt = now;
+                    _gLastHint = hint;
+                    Speech.Say(hint, false);
+                }
+            }
+
+            // the guide tone: from the side to walk to; pitch = your depth compared to the way
+            // (lower = you are too far down, higher = too far up, steady = on the line)
+            if (now < _gToneAt || enemyClose) return;
+            _gToneAt = now + (gdist < 2.5f ? 0.25f : 0.45f);
+            float f = 520f;
+            float off = pos.z - w.z; // > 0: player above the way
+            if (Mathf.Abs(dx) < 0.5f && Mathf.Abs(dz) >= 0.25f) off = -dz; // the way leads straight up or down
+            if (off > 0.2f) f *= Mathf.Lerp(1.15f, 1.9f, Mathf.Clamp01((off - 0.2f) / 3f));
+            else if (off < -0.2f) f *= Mathf.Lerp(0.87f, 0.5f, Mathf.Clamp01((-off - 0.2f) / 3f));
+            float pan = Mathf.Abs(dx) < 0.3f ? 0f : GameInfo.Pan(dx, 3f);
+            Speech.Tone(f, 70, pan, 0.6f, 0, f, 0);
+        }
+
+        /// <summary>"rechts 3 Meter, 1 Meter nach oben" for the next stretch of the way.</summary>
+        private static string GuideHint(float dx, float dz)
+        {
+            if (Mathf.Abs(dx) < 0.6f && Mathf.Abs(dz) < 0.6f) return _gIdx >= _gPath.Count - 1 ? Loc.T("guide_close") : null;
+            return GameInfo.Direction(Vector3.zero, new Vector3(dx, 0, dz));
         }
 
         // ---------------- hazards ----------------
@@ -735,15 +1009,18 @@ namespace RCGAccess
                 if (c == null) continue;
                 Vector3 cp = c.bounds.ClosestPoint(pp);
                 float d = Vector2.Distance(new Vector2(cp.x, cp.z), new Vector2(pp.x, pp.z));
+                if (d > 4f) _hazardSpoken.Remove(c.GetInstanceID());
                 if (d > 1.6f) continue;
                 int id = c.GetInstanceID();
                 float last;
-                if (_hazardWarned.TryGetValue(id, out last) && now - last < 3f) continue;
+                if (_hazardWarned.TryGetValue(id, out last) && now - last < 6f) continue;
                 _hazardWarned[id] = now;
                 float pan = GameInfo.Pan(cp.x - pp.x, 3f);
                 Speech.Tone(300, 260, pan, 0.8f, 0, 150, 0);
-                if (now - _hazardSpeechAt > 12f)
+                // spoken once when coming to this pit, again only after having been away from it
+                if (!_hazardSpoken.Contains(id) && !AutoWalk)
                 {
+                    _hazardSpoken.Add(id);
                     _hazardSpeechAt = now;
                     string where = Mathf.Abs(cp.x - pp.x) > Mathf.Abs(cp.z - pp.z) ? GameInfo.SideWord(cp.x - pp.x) : Loc.T(cp.z > pp.z ? "dir_up" : "dir_down");
                     Speech.Say(Loc.T("pit_warn", where), false);
@@ -768,12 +1045,17 @@ namespace RCGAccess
             catch { return false; }
         }
 
+        /// <summary>No squeaky floor and no abyss on the straight line (the last half meter at the goal is not checked
+        /// for floor: door areas often reach into the wall).</summary>
         private static bool StraightIsSafe(Vector3 a, Vector3 b)
         {
+            bool floor = PathGrid.HasFloor(a);
+            float len = new Vector2(b.x - a.x, b.z - a.z).magnitude;
             for (int i = 1; i <= 10; i++)
             {
                 Vector3 p = Vector3.Lerp(a, b, i / 10f);
-                if (PathGrid.ToyNear(p, 0.4f, 0.1f)) return false;
+                if (_toys.Count > 0 && PathGrid.ToyNear(p, 0.4f, 0.1f)) return false;
+                if (floor && len * (1f - i / 10f) > 0.5f && !PathGrid.HasFloor(new Vector3(p.x, a.y, p.z))) return false;
             }
             return true;
         }
@@ -915,6 +1197,7 @@ namespace RCGAccess
             if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
             if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
             if (t.Obj != null && t.Obj == _cameDoor) { _cameDoor = null; _cameDone = true; } // the player wants to go back
+            if (Guide) { Guide = false; _guideTarget = null; }
             _walkTarget = t;
             AutoWalk = true;
             _walkStart = Time.realtimeSinceStartup;
@@ -923,6 +1206,9 @@ namespace RCGAccess
             _replanAt = 0;
             _stuckSince = Time.realtimeSinceStartup;
             _stuckPos = p.transform.position;
+            _walkGroundY = p.transform.position.y;
+            _climbPhase = false;
+            _gapPhase = 0;
             _stuckMode = 0;
             _pushUntil = 0;
             if (!_beacon) { _beacon = true; _beaconByWalk = true; }
@@ -955,9 +1241,11 @@ namespace RCGAccess
             if (map) { _mapScene = GameInfo.SceneName; PathGrid.RequestMap(); }
             List<Vector3> grid = PathGrid.Find(p, from, to);
             if (map && PathGrid.LastMap != null) Log.Write(PathGrid.LastMap);
+            _pathJumps.Clear();
             if (grid != null && grid.Count > 0)
             {
                 _path.AddRange(grid);
+                _pathJumps.AddRange(PathGrid.LastJumps);
                 // reachable end close to the goal: finish on the exact goal
                 Vector3 last = _path[_path.Count - 1];
                 if (Mathf.Abs(last.x - to.x) < 0.3f && Mathf.Abs(last.z - to.z) < 0.3f) _path[_path.Count - 1] = new Vector3(to.x, last.y, to.z);
@@ -990,6 +1278,16 @@ namespace RCGAccess
 
         public static bool WalkRun;
         public static bool WalkJump;
+        private static int _gapPhase;          // jump across an abyss: 1 step back for a run-up, 2 run to the edge, 3 in the air
+        private static float _gapBackX, _gapPhaseAt, _edgeLogAt;
+
+        /// <summary>Distance to the edge of the floor in walking direction (sideways), up to 3 m.</summary>
+        public static float EdgeDistance(Vector3 pos, int h)
+        {
+            for (float d = 0.1f; d <= 3f; d += 0.1f)
+                if (!PathGrid.HasFloor(pos + new Vector3(h * d, 0, 0))) return d;
+            return 3f;
+        }
         private static float _lastJumpAt = -10f;
         private static InteractEntity _autoEnterDoor;
         private static float _autoEnterUntil;
@@ -1011,6 +1309,7 @@ namespace RCGAccess
         {
             h = 0; v = 0;
             WalkRun = false;
+            WalkJump = false;
             if (!AutoWalk) return false;
             float now = Time.realtimeSinceStartup;
             Target t = _walkTarget;
@@ -1022,6 +1321,19 @@ namespace RCGAccess
                 return false;
             }
             if ((rawH != 0 || rawV != 0) && now - _walkStart > 0.6f) { StopWalk(Loc.T("walk_manual")); return false; }
+            if (t.Kind == Kind.Climb && ClimbInput(p, t, now, out h, out v)) return true;
+            if (!AutoWalk) return false;
+            // fell down (abyss, pit): stop instead of walking on from the respawn point
+            Vector3 here = p.transform.position;
+            bool grounded = false;
+            try { grounded = p.IsGrounded; } catch { }
+            if (grounded) _walkGroundY = here.y;
+            else if (here.y < _walkGroundY - 1.5f && !PathGrid.HasFloor(here))
+            {
+                Log.Write("Hinfuehren: Absturz bei " + here.ToString("F2") + " (Boden vorher " + _walkGroundY.ToString("F2") + ")");
+                StopWalk(Loc.T("walk_fell"));
+                return false;
+            }
             bool beggar = t.Kind == Kind.Beggar;
             if (beggar)
             {
@@ -1092,11 +1404,14 @@ namespace RCGAccess
                 Arrive(t, Loc.T("arrived", t.Label()) + ArrivalHint(t));
                 return false;
             }
-            if (now >= _replanAt || _path.Count == 0)
+            bool inAir = false;
+            try { inAir = p.Fsm != null && (p.Fsm.IsCurrentState<PlayerJump>() || p.Fsm.IsCurrentState<PlayerFall>()); } catch { }
+            if ((now >= _replanAt || _path.Count == 0) && !inAir && _gapPhase == 0)
             {
                 _replanAt = now + (beggar ? 0.5f : 1.5f);
                 Plan(p, pos, goal);
             }
+            if (_path.Count == 0) return true; // in the air without a plan: wait for the landing
             if (now >= _traceAt)
             {
                 _traceAt = now + 0.5f;
@@ -1112,10 +1427,10 @@ namespace RCGAccess
             }
             if (beggar && _pathIdx >= _path.Count - 1) { dx = gdx; dz = gdz; } // walk right into the begging enemy to grab it
             // doors: the path grid keeps a safety margin to walls; for the last bit walk straight into the door area
-            bool interactTarget = (t.Kind == Kind.Exit && !t.IsEdge && t.Door != null)
+            bool interactTarget = (t.Kind == Kind.Exit && !t.IsEdge && t.Door != null) || t.Kind == Kind.Climb
                 || ((t.Kind == Kind.Person || t.Kind == Kind.Shop || t.Kind == Kind.Thing) && t.Obj is InteractEntity && !(t.Obj is PickupObject));
             bool doorFinal = interactTarget && _pathIdx >= _path.Count - 1 && Mathf.Abs(gdx) < 1.5f && Mathf.Abs(gdz) < 2f;
-            if (doorFinal && _toys.Count > 0 && !StraightIsSafe(pos, goal)) doorFinal = false; // never cut across squeaky floor
+            if (doorFinal && !StraightIsSafe(pos, goal)) doorFinal = false; // never cut across squeaky floor or an abyss
             if (doorFinal) { dx = gdx; dz = gdz; }
             h = Mathf.Abs(dx) > 0.12f ? (dx > 0 ? 1 : -1) : 0;
             v = Mathf.Abs(dz) > 0.08f ? (dz > 0 ? 1 : -1) : 0;
@@ -1125,9 +1440,44 @@ namespace RCGAccess
             // squeaky floor in the way: jump over it (the path finder only crosses it where it has to, at its narrowest)
             // furniture or a step in the way that the path goes over: jump onto it
             WalkJump = false;
+            // jump across an abyss: run toward the landing, jump at the edge, keep the direction in the air
+            bool toLanding = _pathJumps.Contains(_pathIdx);
+            bool beforeLanding = _pathJumps.Contains(_pathIdx + 1) && _pathIdx + 1 < _path.Count;
+            if ((toLanding || beforeLanding) && h != 0) WalkRun = true;
+            if (!toLanding && !inAir) _gapPhase = 0;
+            if (toLanding && !inAir && h != 0)
+            {
+                // a run-up is needed: first step back from the edge, then run and jump right at the edge
+                float edge = EdgeDistance(pos, h);
+                if (_gapPhase == 0)
+                {
+                    _gapPhase = edge < 1.4f ? 1 : 2;
+                    _gapBackX = pos.x - h * (1.9f - edge);
+                    _gapPhaseAt = now;
+                    Log.Write("Abgrund: Kante in " + edge.ToString("F2") + " m, " + (_gapPhase == 1 ? "erst Anlauf holen" : "direkt Anlauf"));
+                }
+                if (_gapPhase == 1)
+                {
+                    if (Mathf.Abs(pos.x - _gapBackX) < 0.2f || now - _gapPhaseAt > 1.5f || !PathGrid.HasFloor(pos - new Vector3(h * 0.45f, 0, 0)))
+                    { _gapPhase = 2; _gapPhaseAt = now; }
+                    else { h = -h; v = 0; WalkRun = false; }
+                }
+                if (_gapPhase == 2)
+                {
+                    WalkRun = true;
+                    if (edge < 0.35f && now - _lastJumpAt > 0.9f)
+                    {
+                        WalkJump = true;
+                        _lastJumpAt = now;
+                        _gapPhase = 3;
+                        Log.Write("Sprung ueber Abgrund bei " + pos.ToString("F2") + " zu " + w.ToString("F2"));
+                    }
+                }
+            }
+            if (_gapPhase == 3 && !inAir && now - _lastJumpAt > 0.6f) _gapPhase = 0;
             if (h != 0 || v != 0)
             {
-                bool airborne = p.Fsm != null && (p.Fsm.IsCurrentState<PlayerJump>() || p.Fsm.IsCurrentState<PlayerFall>());
+                bool airborne = inAir;
                 Vector3 near = pos + new Vector3(h * 0.5f, 0, v * 0.3f);
                 if (!airborne && now - _lastJumpAt > 0.9f)
                 {
@@ -1152,6 +1502,14 @@ namespace RCGAccess
                         Log.Write("Sprung ueber Quietschboden bei " + pos.ToString("F2") + " Richtung " + h + "/" + v + (WalkRun ? " rennend" : ""));
                     }
                 }
+            }
+
+            // never walk over an edge into an abyss unless jumping across it on purpose
+            if (!WalkJump && !inAir && _gapPhase == 0 && (h != 0 || v != 0) && PathGrid.HasFloor(pos))
+            {
+                if (h != 0 && !PathGrid.HasFloor(pos + new Vector3(h * 0.45f, 0, 0))) h = 0;
+                if (v != 0 && !PathGrid.HasFloor(pos + new Vector3(0, 0, v * 0.3f))) v = 0;
+                if (h == 0 && v == 0 && now - _edgeLogAt > 2f) { _edgeLogAt = now; Log.Write("Hinfuehren: Kante zum Abgrund bei " + pos.ToString("F2") + ", halte an"); }
             }
 
             // stuck handling
@@ -1183,9 +1541,77 @@ namespace RCGAccess
             return true;
         }
 
+        private static float _walkGroundY;
+        private static bool _climbPhase;
+        private static bool _climbMoved;
+        private static float _climbStart;
+
+        /// <summary>At a climbing spot: hold up (or down from the top) until the climb is over. False = not climbing (yet).</summary>
+        private static bool ClimbInput(RCG.Player p, Target t, float now, out int h, out int v)
+        {
+            h = 0; v = 0;
+            Climable cl = t.Obj as Climable;
+            Climb c = p.Climb;
+            if (cl == null || c == null) return false;
+            bool down = _climbPhase ? _climbDown : ClimbFromTop(cl, p.transform.position);
+            bool climbing = false, topUp = false, topDown = false, grounded = false;
+            try
+            {
+                climbing = c.IsClimbing;
+                topUp = p.Fsm != null && p.Fsm.IsCurrentState<PlayerClimbTopUp>();
+                topDown = p.Fsm != null && p.Fsm.IsCurrentState<PlayerClimbTopDown>();
+                grounded = p.IsGrounded;
+            }
+            catch { }
+            bool start = down ? c.ProbeDownTouching : c.TouchingClimbSurface;
+            if (!_climbPhase)
+            {
+                if (!start && !climbing) return false;
+                _climbPhase = true;
+                _climbDown = down;
+                _climbMoved = false;
+                _climbStart = now;
+                _climbFromY = p.transform.position.y;
+                Log.Write("Klettern " + (down ? "runter" : "hoch") + " ab " + p.transform.position.ToString("F2"));
+                Speech.Say(Loc.T(down ? "climb_go_down" : "climb_go_up"), true);
+            }
+            if (climbing || topUp || topDown) _climbMoved = true;
+            float dy = p.transform.position.y - _climbFromY;
+            if (_climbMoved && !climbing && !topUp && !topDown && grounded && Mathf.Abs(dy) > 0.8f)
+            {
+                _climbPhase = false;
+                Log.Write("Klettern fertig bei " + p.transform.position.ToString("F2"));
+                Arrive(t, Loc.T(_climbDown ? "climb_done_down" : "climb_done_up"));
+                return false;
+            }
+            if (now - _climbStart > (_climbMoved ? 15f : 3f))
+            {
+                _climbPhase = false;
+                Log.Write("Klettern klappt nicht bei " + p.transform.position.ToString("F2") + ", bewegt " + _climbMoved);
+                StopWalk(Loc.T("climb_fail"));
+                return false;
+            }
+            v = _climbDown ? -1 : 1;
+            return true;
+        }
+
+        private static bool _climbDown;
+        private static float _climbFromY;
+
         private static bool _walkTarget_DoorCanEnter(Target t)
         {
             try { return t.Door == null || t.Door.CanEnter; } catch { return true; }
+        }
+
+        private static string EdgeWord(DoorEnterDirection d)
+        {
+            switch (d)
+            {
+                case DoorEnterDirection.Left: return Loc.T("dir_left");
+                case DoorEnterDirection.Up: return Loc.T("dir_up");
+                case DoorEnterDirection.Down: return Loc.T("dir_down");
+                default: return Loc.T("dir_right");
+            }
         }
 
         private static void DirOf(DoorEnterDirection d, out int h, out int v)
@@ -1201,6 +1627,8 @@ namespace RCGAccess
         }
 
         // ---------------- dead end ----------------
+        private static int _obstSaid;
+        private static float _obstSaidAt = -100f;
         /// <summary>Called after PlayerInput.Update with the player's own stick input.</summary>
         public static void CheckDeadEnd(RCG.Player p, int h, int v)
         {
@@ -1222,12 +1650,37 @@ namespace RCGAccess
             bool blockedV = v != 0 && Mathf.Abs(pos.z - _dePos.z) < 0.06f;
             _deTimer = now; _dePos = pos;
             if (!blockedH && !blockedV) return;
+            // what is in the way: wall, obstacle or an enemy
+            Collider what;
+            int kind = PathGrid.Blocker(pos, blockedH ? h : 0, blockedH ? 0 : v, out what);
+            if (kind == 3) return; // an enemy or another character: the radar tells about it
             if (now - _deToneAt > 1.5f)
             {
                 _deToneAt = now;
                 float pan = blockedH ? h : 0;
-                float f = blockedV && !blockedH ? (v > 0 ? 140 : 70) : 90;
-                Speech.Tone(f, 160, pan, 0.8f, 3, f, 0);
+                if (kind == 2)
+                {
+                    Speech.Tone(170, 45, pan * 0.8f, 0.8f, 1, 150, 0);
+                    Speech.Tone(170, 45, pan * 0.8f, 0.8f, 1, 150, 120);
+                }
+                else
+                {
+                    float f = blockedV && !blockedH ? (v > 0 ? 140 : 70) : 90;
+                    Speech.Tone(f, 160, pan, 0.8f, 3, f, 0);
+                }
+            }
+            if (kind == 2)
+            {
+                // an obstacle: say once how to get around it, no dead end text
+                int oid = what != null ? what.GetInstanceID() : 0;
+                if (oid != _obstSaid || now - _obstSaidAt > 20f)
+                {
+                    _obstSaid = oid; _obstSaidAt = now;
+                    Log.Write("Hindernis " + (what != null ? GameInfo.Path(what.transform) : "?") + " bei " + pos.ToString("F2"));
+                    Speech.Say(Loc.T(blockedH ? "obstacle_h" : "obstacle_v"), true);
+                }
+                _deVCount = 0;
+                return;
             }
             if (blockedV && !blockedH) _deVCount++; else _deVCount = 0;
             if (Combat.InFight) return;

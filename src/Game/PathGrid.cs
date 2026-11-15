@@ -63,6 +63,55 @@ namespace RCGAccess
             return false;
         }
 
+        private static readonly Collider[] _blk = new Collider[24];
+
+        /// <summary>True if the player's body would not fit at this spot (walls, furniture).</summary>
+        public static bool Blocked(Vector3 p)
+        {
+            float keep = _inflate;
+            _inflate = 1f;
+            bool b = BodyBlocked(p, p.y + 0.5f, _mask != -1 ? _mask : ~0);
+            _inflate = keep;
+            return b;
+        }
+
+        /// <summary>What stops the player walking in direction h/v: 0 nothing found (invisible border = wall),
+        /// 1 wall or room boundary, 2 obstacle (furniture, crate, car ...), 3 an enemy or other character.</summary>
+        public static int Blocker(Vector3 pos, int h, int v, out Collider what)
+        {
+            what = null;
+            int mask = _mask != -1 ? _mask : ~0;
+            Vector3 c = pos + new Vector3(h * 0.45f, 0.9f, v * 0.2f);
+            Vector3 half = new Vector3(h != 0 ? 0.2f : 0.35f, 0.75f, v != 0 ? 0.12f : 0.06f);
+            int n = Physics.OverlapBoxNonAlloc(c, half, _blk, Quaternion.identity, mask, QueryTriggerInteraction.Ignore);
+            int result = 0;
+            for (int i = 0; i < n; i++)
+            {
+                Collider col = _blk[i];
+                if (col == null) continue;
+                CombatEntity ce = col.GetComponentInParent<CombatEntity>();
+                if (ce != null)
+                {
+                    if (ce is RCG.Player) continue;
+                    if (result == 0) { result = 3; what = col; }
+                    continue;
+                }
+                if (!Counts(col)) continue;
+                int k = IsObstacle(col, pos.y) ? 2 : 1;
+                if (result == 0 || result == 3 || (k == 2 && result == 1)) { result = k; what = col; }
+            }
+            return result;
+        }
+
+        private static bool IsObstacle(Collider col, float floorY)
+        {
+            Bounds b = col.bounds;
+            string n = col.name.ToLowerInvariant() + "/" + (col.transform.parent != null ? col.transform.parent.name.ToLowerInvariant() : "");
+            if (n.Contains("wall") || n.Contains("border") || n.Contains("bound") || n.Contains("invisible") || n.Contains("camera") || n.Contains("backcollision") || n.Contains("frontcollision")) return false;
+            if (b.max.y < floorY + 2.6f) return true;           // low: furniture, counters, crates, cars
+            return b.size.x < 6f && b.size.z < 3f;              // small and free standing: pillars, machines
+        }
+
         /// <summary>Highest walkable surface at x/z that a jump from the given height can reach (furniture, steps);
         /// float.NaN if there is none.</summary>
         public static float SurfaceY(float x, float z, float from, int mask)
@@ -81,10 +130,31 @@ namespace RCGAccess
 
         public static float SurfaceY(float x, float z, float from) { return SurfaceY(x, z, from, _mask != -1 ? _mask : ~0); }
 
-        /// <summary>0 free, 2 blocked, 4 a platform (furniture, step) the player has to jump onto.</summary>
+        /// <summary>Floor checks only where the player's own spot has a floor collider (some rooms have none).</summary>
+        private static bool _holeCheck;
+
+        /// <summary>True if there is floor at x/z no more than 1.2 m below the height baseY (no abyss, no hole).</summary>
+        public static bool HasFloor(Vector3 c, float baseY, int mask)
+        {
+            int n = Physics.RaycastNonAlloc(new Vector3(c.x, baseY + 0.4f, c.z), Vector3.down, _rays, 1.6f, mask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < n; i++) if (Counts(_rays[i].collider)) return true;
+            return false;
+        }
+
+        public static bool HasFloor(Vector3 p) { return HasFloor(p, p.y, _mask != -1 ? _mask : ~0); }
+
+        /// <summary>Floor under the whole foot area (with a small margin to edges).</summary>
+        private static bool FloorAround(Vector3 c, int mask)
+        {
+            float ox = 0.2f * _inflate + 0.05f, oz = 0.12f;
+            return HasFloor(c, _base, mask) && HasFloor(c + new Vector3(ox, 0, 0), _base, mask) && HasFloor(c - new Vector3(ox, 0, 0), _base, mask)
+                && HasFloor(c + new Vector3(0, 0, oz), _base, mask) && HasFloor(c - new Vector3(0, 0, oz), _base, mask);
+        }
+
+        /// <summary>0 free, 2 blocked, 4 a platform (furniture, step) the player has to jump onto, 5 no floor (abyss, hole).</summary>
         private static byte CellState(Vector3 c, int mask)
         {
-            if (!BodyBlocked(c, _base + 0.5f, mask)) return 0;
+            if (!BodyBlocked(c, _base + 0.5f, mask)) return _holeCheck && !FloorAround(c, mask) ? (byte)5 : (byte)0;
             // something at body height: maybe the top of a piece of furniture one can jump onto
             float top = SurfaceY(c.x, c.z, _base, mask);
             if (float.IsNaN(top) || top < _base + 0.3f) return 2;
@@ -195,8 +265,9 @@ namespace RCGAccess
                 int w = Mathf.Clamp(Mathf.CeilToInt((maxX - minX) / Cell) + 1, 2, 240);
                 int d = Mathf.Clamp(Mathf.CeilToInt((maxZ - minZ) / Cell) + 1, 2, 60);
                 // 0 unknown, 1 free, 2 blocked, 3 squeaky floor (passable only by jumping over it: expensive),
-                // 4 platform to jump onto (furniture, steps)
+                // 4 platform to jump onto (furniture, steps), 5 no floor (abyss)
                 _base = from.y;
+                _holeCheck = HasFloor(from, from.y, mask);
                 byte[] state = new byte[w * d];
                 Vector3 halfToy = new Vector3(0.35f * _inflate + 0.05f, 0, 0.05f + 0.05f);
                 Func<int, int, bool> free = delegate (int x, int z)
@@ -207,7 +278,7 @@ namespace RCGAccess
                     {
                         Vector3 c = new Vector3(minX + x * Cell, 0, minZ + z * Cell);
                         byte cs = CellState(c, mask);
-                        state[i] = cs == 2 ? (byte)2 : cs == 4 ? (byte)4 : (_base < 0.4f && ToyNear(c, halfToy.x, halfToy.z)) ? (byte)3 : (byte)1;
+                        state[i] = cs == 2 ? (byte)2 : cs == 4 ? (byte)4 : cs == 5 ? (byte)5 : (_base < 0.4f && ToyNear(c, halfToy.x, halfToy.z)) ? (byte)3 : (byte)1;
                     }
                     return state[i] == 1 || state[i] == 3 || state[i] == 4;
                 };
@@ -219,6 +290,7 @@ namespace RCGAccess
 
                 float[] g = new float[w * d];
                 int[] parent = new int[w * d];
+                bool[] jumpTo = new bool[w * d];
                 for (int i = 0; i < g.Length; i++) { g[i] = float.MaxValue; parent[i] = -1; }
                 bool[] closed = new bool[w * d];
                 Heap open = new Heap();
@@ -243,12 +315,17 @@ namespace RCGAccess
                         {
                             if (dx == 0 && dz == 0) continue;
                             int nx = cx + dx, nz = cz + dz;
-                            if (!free(nx, nz)) continue;
+                            if (!free(nx, nz))
+                            {
+                                // abyss right next to us: floor again a few cells further in the same direction = jump across
+                                if (dx != 0 && nx >= 0 && nz >= 0 && nx < w && nz < d && state[nz * w + nx] == 5) TryGap(cx, cz, dx, dz, w, d, cur, gx, gz, free, state, g, parent, closed, jumpTo, open);
+                                continue;
+                            }
                             if (dx != 0 && dz != 0 && (!free(cx + dx, cz) || !free(cx, cz + dz))) continue;
                             int ni = nz * w + nx;
                             if (closed[ni]) continue;
                             float ng = g[cur] + ((dx != 0 && dz != 0) ? 1.414f : 1f) + (state[ni] == 3 ? 12f : state[ni] == 4 ? 6f : 0f);
-                            if (ng < g[ni]) { g[ni] = ng; parent[ni] = cur; open.Push(ng + Heu(nx, nz, gx, gz), ni); }
+                            if (ng < g[ni]) { g[ni] = ng; parent[ni] = cur; jumpTo[ni] = false; open.Push(ng + Heu(nx, nz, gx, gz), ni); }
                         }
                 }
                 // walk back, keep only the corners (where the step direction changes)
@@ -257,17 +334,22 @@ namespace RCGAccess
                 while (k >= 0) { chain.Add(k); k = parent[k]; }
                 chain.Reverse();
                 List<Vector3> path = new List<Vector3>();
+                LastJumps.Clear();
                 for (int i = 1; i < chain.Count; i++)
                 {
-                    if (i < chain.Count - 1)
+                    // take-off and landing of a jump across an abyss always stay waypoints
+                    bool keep = jumpTo[chain[i]] || (i < chain.Count - 1 && jumpTo[chain[i + 1]]);
+                    if (i < chain.Count - 1 && !keep)
                     {
                         int ax = chain[i] % w - chain[i - 1] % w, az = chain[i] / w - chain[i - 1] / w;
                         int bx = chain[i + 1] % w - chain[i] % w, bz = chain[i + 1] / w - chain[i] / w;
                         if (ax == bx && az == bz) continue;
                     }
                     int c = chain[i];
+                    if (jumpTo[c]) LastJumps.Add(path.Count);
                     path.Add(new Vector3(minX + (c % w) * Cell, from.y, minZ + (c / w) * Cell));
                 }
+                if (LastJumps.Count > 0) Log.Write("Wegfinder: Sprung ueber Abgrund geplant, " + LastJumps.Count + "x, erster bei " + path[LastJumps[0]].ToString("F2"));
                 if (path.Count == 0) path.Add(new Vector3(from.x, from.y, from.z));
                 if (_wantMap)
                 {
@@ -275,13 +357,13 @@ namespace RCGAccess
                     System.Text.StringBuilder sb = new System.Text.StringBuilder();
                     HashSet<int> onPath = new HashSet<int>(chain);
                     sb.Append("Rasterkarte x ").Append(minX.ToString("F2")).Append(" bis ").Append((minX + (w - 1) * Cell).ToString("F2"))
-                      .Append(", z ").Append(minZ.ToString("F2")).Append(" (unten) bis ").Append((minZ + (d - 1) * Cell).ToString("F2")).Append(" (oben); # Wand, ~ Quietschboden, ^ Moebel/Stufe (Sprung), * Weg, S Start, Z Ziel, ? nicht geprueft\r\n");
+                      .Append(", z ").Append(minZ.ToString("F2")).Append(" (unten) bis ").Append((minZ + (d - 1) * Cell).ToString("F2")).Append(" (oben); # Wand, ~ Quietschboden, ^ Moebel/Stufe (Sprung), O Abgrund, * Weg, S Start, Z Ziel, ? nicht geprueft\r\n");
                     for (int z = d - 1; z >= 0; z--)
                     {
                         for (int x = 0; x < w; x++)
                         {
                             int i = z * w + x;
-                            char ch = state[i] == 2 ? '#' : state[i] == 3 ? '~' : state[i] == 4 ? '^' : state[i] == 1 ? '.' : '?';
+                            char ch = state[i] == 2 ? '#' : state[i] == 3 ? '~' : state[i] == 4 ? '^' : state[i] == 5 ? 'O' : state[i] == 1 ? '.' : '?';
                             if (onPath.Contains(i)) ch = '*';
                             if (i == start) ch = 'S';
                             if (x == gx && z == gz) ch = 'Z';
@@ -294,6 +376,33 @@ namespace RCGAccess
                 return path;
             }
             catch (Exception e) { Log.Error("PathGrid", e); return null; }
+        }
+
+        /// <summary>Path indices (of the last Find) that are reached by jumping across an abyss.</summary>
+        public static readonly List<int> LastJumps = new List<int>();
+
+        /// <summary>Longest jump across an abyss the path finder plans (meters, sideways; in depth at most 1 m).</summary>
+        private const float MaxGap = 4.5f;
+
+        private static void TryGap(int cx, int cz, int dx, int dz, int w, int d, int cur, int gx, int gz, Func<int, int, bool> free,
+            byte[] state, float[] g, int[] parent, bool[] closed, bool[] jumpTo, Heap open)
+        {
+            int maxK = Mathf.FloorToInt(MaxGap / Cell);
+            for (int k = 2; k <= maxK; k++)
+            {
+                int jx = cx + dx * k, jz = cz + dz * k;
+                if (jx < 0 || jz < 0 || jx >= w || jz >= d) return;
+                if (Mathf.Abs(dz * k) * Cell > 1.0f) return;
+                bool f = free(jx, jz);
+                int ji = jz * w + jx;
+                if (state[ji] == 2) return;              // a wall in the way
+                if (!f) continue;                         // still abyss
+                if (!free(jx + dx, jz + dz)) return;      // landing too narrow
+                if (closed[ji]) return;
+                float ng = g[cur] + k * (dz != 0 ? 1.414f : 1f) + 10f;
+                if (ng < g[ji]) { g[ji] = ng; parent[ji] = cur; jumpTo[ji] = true; open.Push(ng + Heu(jx, jz, gx, gz), ji); }
+                return;
+            }
         }
 
         /// <summary>Minimal binary heap (priority, index).</summary>

@@ -28,6 +28,7 @@ namespace RCGAccess
         public static void Apply(Harmony h)
         {
             Post(h, typeof(UI_InputSelectable), "ToggleHover", "HoverPost");
+            Post(h, typeof(DefenseCollider), "Attemp_Hit", "HitPost");
             Post(h, typeof(UI_StoreItemDisplayV2), "ToggleHover", "StoreHoverPost");
             Post(h, typeof(UI_CharacterSelectOption), "OnHover", "CharHoverPost");
             Post(h, typeof(UI_FileSelectOption), "OnHover", "FileHoverPost");
@@ -48,7 +49,8 @@ namespace RCGAccess
             try
             {
                 MethodInfo rb = typeof(PlayerRecruit).GetMethod("RecruitButtonPressed", BindingFlags.Instance | BindingFlags.Public);
-                h.Patch(rb, new HarmonyMethod(typeof(Patches).GetMethod("RecruitButtonPre", BindingFlags.Static | BindingFlags.Public)));
+                h.Patch(rb, new HarmonyMethod(typeof(Patches).GetMethod("RecruitButtonPre", BindingFlags.Static | BindingFlags.Public)),
+                    new HarmonyMethod(typeof(Patches).GetMethod("RecruitButtonPost", BindingFlags.Static | BindingFlags.Public)));
                 Log.Write("Patch aktiv: PlayerRecruit.RecruitButtonPressed");
             }
             catch (Exception e) { Log.Error("Patch RecruitButtonPressed", e); }
@@ -181,6 +183,33 @@ namespace RCGAccess
             try { Combat.OnRecruitButton(__instance._Player); } catch { }
         }
 
+        private static float _hitLogAt;
+
+        /// <summary>Hits of player 1 on enemies: depth difference, to check the radar's "on your line" range.</summary>
+        public static void HitPost(DefenseCollider __instance, bool __result, object inOtherIAttacker)
+        {
+            try
+            {
+                if (!__result) return;
+                RCG.Player p = inOtherIAttacker as RCG.Player;
+                if (p == null || p.PlayerID != 0) return;
+                EnemyEnitity e = __instance.GetComponentInParent<EnemyEnitity>();
+                if (e == null) return;
+                Combat.OnPlayerHitEnemy(p, e);
+                float now = Time.realtimeSinceStartup;
+                if (now - _hitLogAt < 0.3f) return;
+                _hitLogAt = now;
+                Vector3 a = p.transform.position, b = e.transform.position;
+                Log.Write("Treffer auf " + Combat.EnemyName(e) + " dx " + (b.x - a.x).ToString("F2") + " dz " + (b.z - a.z).ToString("F2"));
+            }
+            catch { }
+        }
+
+        public static void RecruitButtonPost(PlayerRecruit __instance)
+        {
+            try { Combat.OnRecruitButtonDone(__instance._Player); } catch { }
+        }
+
         public static void RewardPost(UI_ItemPickup __instance, int __0)
         {
             PhoneHelp.OnReward(__instance, __0);
@@ -240,6 +269,7 @@ namespace RCGAccess
         private static MethodInfo _setRun = AccessTools.PropertySetter(typeof(CombatInput), "Run");
         private static MethodInfo _setQuick = AccessTools.PropertySetter(typeof(CombatInput), "Quick");
         private static MethodInfo _setJump = AccessTools.PropertySetter(typeof(CombatInput), "Jump");
+        private static MethodInfo _setTaunt = AccessTools.PropertySetter(typeof(CombatInput), "Taunt");
         private static readonly object[] _arg = new object[1];
         private static PlayerInput _cachedInput;
         private static RCG.Player _cachedPlayer;
@@ -260,6 +290,8 @@ namespace RCGAccess
                 RCG.Player p = _cachedPlayer;
                 if (p == null) return;
                 int rawH = __instance.HorizontalDir, rawV = __instance.VerticalDir;
+                // the left stick press starts automatic guiding: no taunt then
+                if (Settings.LsWalk && Settings.PadKeys && __instance.Taunt && _setTaunt != null) { _arg[0] = false; _setTaunt.Invoke(__instance, _arg); }
                 if (__instance.Quick || __instance.Heavy || __instance.Special) Combat.NotePlayerAttack();
                 int h, v;
                 if (Navigator.BlockCameDoor(__instance.InteractQuick)) __instance.InteractQuick = false;
