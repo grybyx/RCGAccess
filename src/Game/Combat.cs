@@ -73,16 +73,16 @@ namespace RCGAccess
                 if (hp < _lastHp && Time.realtimeSinceStartup - _hitToneAt > 0.3f)
                 {
                     // damage: low squeaky square
-                    Speech.Tone(180, 140, 0, 0.8f, 2, 120, 0);
+                    Speech.Tone(Snd.Health, 180, 140, 0, 0.8f, 2, 120, 0);
                 }
                 else if (hp > _lastHp && _lastHp > 0)
                 {
-                    Speech.Tone(500, 220, 0, 0.7f, 0, 900, 0);
+                    Speech.Tone(Snd.Health, 500, 220, 0, 0.7f, 0, 900, 0);
                 }
             }
             if (dead && !_wasDead && _lastHp > 0)
             {
-                Speech.Tone(400, 600, 0, 0.9f, 1, 100, 0);
+                Speech.Tone(Snd.Health, 400, 600, 0, 0.9f, 1, 100, 0);
                 Speech.Say(Loc.T("player_ko"), true);
             }
             _wasDead = dead;
@@ -91,8 +91,8 @@ namespace RCGAccess
             if (Settings.HealthTones && !dead && pct < 0.3f && !GameInfo.Quiet && Time.realtimeSinceStartup >= _nextPulse)
             {
                 _nextPulse = Time.realtimeSinceStartup + 2.5f;
-                Speech.Tone(110, 160, 0, 0.8f, 0, 100, 0);
-                Speech.Tone(110, 160, 0, 0.6f, 0, 100, 260);
+                Speech.Tone(Snd.Health, 110, 160, 0, 0.8f, 0, 100, 0);
+                Speech.Tone(Snd.Health, 110, 160, 0, 0.6f, 0, 100, 260);
             }
         }
 
@@ -117,8 +117,8 @@ namespace RCGAccess
             {
                 if (Settings.MoneyTones)
                 {
-                    Speech.Tone(1318, 50, 0, 0.45f, 0, 1318, 0);
-                    Speech.Tone(1760, 70, 0, 0.45f, 0, 1760, 55);
+                    Speech.Tone(Snd.Money, 1318, 50, 0, 0.45f, 0, 1318, 0);
+                    Speech.Tone(Snd.Money, 1760, 70, 0, 0.45f, 0, 1760, 55);
                 }
                 _moneyAccum += m - _lastMoney;
                 _moneySayAt = Time.realtimeSinceStartup + 1.2f;
@@ -205,10 +205,13 @@ namespace RCGAccess
             int visible = 0;
             HashSet<int> alive = new HashSet<int>();
             List<EnemyEnitity> newOnes = new List<EnemyEnitity>();
+            EnemyEnitity roomBoss = null, radar = null;
+            float bestRadar = float.MaxValue;
             foreach (EnemyEnitity e in list)
             {
                 Vector3 ep = e.transform.position;
                 float d = Dist(pp, ep);
+                if (e is BossBaseEntity && e.Stamina > 0) roomBoss = e;
                 bool vis = OnScreen(ep) || d < 5f;
                 int id = e.GetInstanceID();
                 alive.Add(id);
@@ -218,6 +221,8 @@ namespace RCGAccess
                 visible++;
                 if (!_known.Contains(id)) { _known.Add(id); newOnes.Add(e); }
                 if (d < best) { best = d; nearest = e; }
+                // the boss has its own locator: the radar follows the other enemies
+                if (d < bestRadar && !(Settings.BossBeacon && e is BossBaseEntity)) { bestRadar = d; radar = e; }
                 if (d < bestHostile && !IsBegging(e)) bestHostile = d;
                 CheckAttack(e, pp, ep, d, now);
                 CheckBeggingAndWeapon(e, pp, ep, now);
@@ -241,6 +246,7 @@ namespace RCGAccess
             }
             foreach (int g in gone) { _tracked.Remove(g); _lastPos.Remove(g); _lastState.Remove(g); }
 
+            BossHelp.SetBoss(roomBoss);
             Nearest = nearest;
             NearestEnemyDist = best;
             NearestHostileDist = bestHostile;
@@ -265,25 +271,29 @@ namespace RCGAccess
                 {
                     _lastEnemySpeech = now;
                     _pendEnemy = first; _pendBoss = boss; _pendCount = visible > 1 && prevVisible == 0 ? visible : 0; _pendAt = now;
+                    _pendList.Clear();
+                    if (!boss) foreach (EnemyEnitity e in newOnes) if (!(e is BossBaseEntity) && !(e is SubBossBaseEntity)) _pendList.Add(e);
                 }
             }
             SayPendingEnemy(pp, now);
 
             // knocking for the nearest enemy
-            if (Settings.Radar && nearest != null && best <= Settings.RadarRange && now >= _nextKnock)
+            if (Settings.Radar && radar != null && bestRadar <= Settings.RadarRange && now >= _nextKnock)
             {
-                Vector3 ep = nearest.transform.position;
+                EnemyEnitity nearestR = radar;
+                Vector3 ep = nearestR.transform.position;
                 float range = Mathf.Max(2f, Settings.RadarRange);
-                float t = Mathf.Clamp01((best - 0.6f) / (range - 0.6f));
+                float t = Mathf.Clamp01((bestRadar - 0.6f) / (range - 0.6f));
                 float interval = Mathf.Lerp(0.12f, 1.4f, t * t * 0.4f + t * 0.6f); // echo sounder: slow far away, fast up close
                 _nextKnock = now + interval;
-                Knock(ep.x - pp.x, ep.z - pp.z, HpPercent(nearest), nearest is BossBaseEntity, WeaponOf(nearest) != null);
+                Knock(ep.x - pp.x, ep.z - pp.z, HpPercent(nearestR), nearestR is BossBaseEntity, WeaponOf(nearestR) != null);
             }
         }
 
         private static EnemyEnitity _pendEnemy;
         private static bool _pendBoss;
         private static int _pendCount;
+        private static readonly List<EnemyEnitity> _pendList = new List<EnemyEnitity>();
         private static float _pendAt;
 
         /// <summary>New enemy announcement. It waits until speech is quiet and then takes the side the enemy is on at that
@@ -293,6 +303,23 @@ namespace RCGAccess
             if (_pendEnemy == null) return;
             if (now - _pendAt > 4f || !_pendEnemy.gameObject.activeInHierarchy) { _pendEnemy = null; return; }
             if (Speech.IsSpeaking && !_pendBoss) return;
+            // several new enemies at once (e.g. Hibari's schoolgirls, one on each side): name every side
+            _pendList.RemoveAll(e => e == null || !e.gameObject.activeInHierarchy || e.Stamina <= 0);
+            if (!_pendBoss && _pendList.Count >= 2)
+            {
+                _pendList.Sort((a, b) => Dist(pp, a.transform.position).CompareTo(Dist(pp, b.transform.position)));
+                List<string> parts = new List<string>();
+                for (int i = 0; i < _pendList.Count && i < 4; i++)
+                {
+                    Vector3 p2 = _pendList[i].transform.position;
+                    parts.Add(EnemyName(_pendList[i]) + " " + GameInfo.SideWord(p2.x - pp.x) + " " + GameInfo.Meters(Dist(pp, p2)));
+                }
+                string txt = Loc.T("enemies_new_list", _pendList.Count, string.Join(", ", parts.ToArray()));
+                Log.Verbose("Gegner-Ansage mehrere: " + txt);
+                Speech.Say(txt, false);
+                _pendEnemy = null; _pendList.Clear();
+                return;
+            }
             Vector3 ep = _pendEnemy.transform.position;
             float dx = ep.x - pp.x;
             string where = GameInfo.SideWord(dx) + ", " + GameInfo.Meters(Dist(pp, ep));
@@ -323,7 +350,7 @@ namespace RCGAccess
             if (boss) pitch *= 0.85f;
             float vol = (0.2f + 0.8f * Mathf.Clamp01(hp)) * Settings.KnockVolume / 100f;
             float pan = StrongPan(dx);
-            Speech.RawTone(pitch, line ? 45 : 60, pan, vol * (line ? 0.8f : 1f), armed ? 1 : 0, line ? pitch : pitch * 0.85f, 0);
+            Speech.RawTone(pitch, line ? 45 : 60, pan, vol * (line ? 0.8f * Settings.LineVolume / 100f : 1f), armed ? 1 : 0, line ? pitch : pitch * 0.85f, 0);
         }
 
         /// <summary>Clear stereo side: anything more than 30 cm to the side is at least half way to that ear.</summary>
@@ -338,9 +365,9 @@ namespace RCGAccess
         /// <summary>Falling major triad from the enemy's side: enemy defeated.</summary>
         public static void DefeatTriad(float pan)
         {
-            Speech.Tone(784, 90, pan, 0.8f, 1, 784, 0);
-            Speech.Tone(659, 90, pan, 0.8f, 1, 659, 95);
-            Speech.Tone(523, 180, pan, 0.8f, 1, 523, 190);
+            Speech.Tone(Snd.Fight, 784, 90, pan, 0.8f, 1, 784, 0);
+            Speech.Tone(Snd.Fight, 659, 90, pan, 0.8f, 1, 659, 95);
+            Speech.Tone(Snd.Fight, 523, 180, pan, 0.8f, 1, 523, 190);
         }
 
         private static System.Reflection.PropertyInfo _reqKills = typeof(ScreenLock).GetProperty("RequiredKills", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
@@ -421,8 +448,8 @@ namespace RCGAccess
                 if (_beggingSaid.Add(id) && Settings.EnemyAnnounce)
                 {
                     float pan = StrongPan(ep.x - pp.x);
-                    Speech.Tone(600, 120, pan, 0.6f, 0, 900, 0);
-                    Speech.Tone(600, 120, pan, 0.6f, 0, 900, 180);
+                    Speech.Tone(Snd.Fight, 600, 120, pan, 0.6f, 0, 900, 0);
+                    Speech.Tone(Snd.Fight, 600, 120, pan, 0.6f, 0, 900, 180);
                     Speech.Say(Loc.T("begging", EnemyName(e), GameInfo.Direction(pp, ep)) + (Settings.PadKeys ? " " + Loc.T("beg_guide") : ""), false);
                     Navigator.FocusBeggar(e);
                 }
@@ -454,7 +481,7 @@ namespace RCGAccess
             if (slave == _grabbed) return;
             _grabbed = slave;
             if (slave == null) return;
-            Speech.Tone(330, 60, 0, 0.6f, 2, 500, 0);
+            Speech.Tone(Snd.Recruit, 330, 60, 0, 0.6f, 2, 500, 0);
             EnemyEnitity e = slave as EnemyEnitity;
             if (e != null && e._CanBeRecruted && !(e is BossBaseEntity))
             {
@@ -469,10 +496,10 @@ namespace RCGAccess
         {
             if (ok)
             {
-                Speech.Tone(523, 90, 0, 0.7f, 0, 523, 0);
-                Speech.Tone(659, 90, 0, 0.7f, 0, 659, 95);
-                Speech.Tone(784, 90, 0, 0.7f, 0, 784, 190);
-                Speech.Tone(1046, 200, 0, 0.7f, 0, 1046, 285);
+                Speech.Tone(Snd.Recruit, 523, 90, 0, 0.7f, 0, 523, 0);
+                Speech.Tone(Snd.Recruit, 659, 90, 0, 0.7f, 0, 659, 95);
+                Speech.Tone(Snd.Recruit, 784, 90, 0, 0.7f, 0, 784, 190);
+                Speech.Tone(Snd.Recruit, 1046, 200, 0, 0.7f, 0, 1046, 285);
                 Speech.Say(Loc.T("recruited"), true);
             }
         }
@@ -514,12 +541,18 @@ namespace RCGAccess
 
         /// <summary>Prefix of PlayerRecruit.RecruitButtonPressed (LT/LB): says why nothing happens, or prepares the
         /// announcement of the helper.</summary>
+        private static float _recruitBtnAt = -10f;
+
         public static void OnRecruitButton(RCG.Player p)
         {
             _assistExpected = false;
             try
             {
                 if (p == null || p.PlayerID != 0) return;
+                // the game calls this twice for one press: only the first counts
+                float nowB = Time.realtimeSinceStartup;
+                if (nowB - _recruitBtnAt < 0.3f) return;
+                _recruitBtnAt = nowB;
                 PlayerRecruit r = p._playerRecruit;
                 // holding an enemy: recruiting
                 if (p.Puppet != null && p.Puppet.IsMaster)
@@ -545,7 +578,7 @@ namespace RCGAccess
                 else if (r._EnemySummon != null) Speech.Say(Loc.T("recruit_fighting", RecruitName(r)), true);
                 else if (r.State != PlayerRecruit.RecruitState.Idle)
                 {
-                    Speech.Tone(200, 120, 0, 0.6f, 3, 200, 0);
+                    Speech.Tone(Snd.Recruit, 200, 120, 0, 0.6f, 3, 200, 0);
                     Speech.Say(Loc.T("recruit_wait", RecruitName(r), Mathf.CeilToInt(RecruitCooldownLeft(r))), true);
                 }
                 else _assistExpected = true;
@@ -568,8 +601,8 @@ namespace RCGAccess
                     _recruitWasUsed = true;
                     Log.Write("Hilfe gerufen: " + EnemyName(_summon));
                     if (!Settings.RecruitInfo) return;
-                    Speech.Tone(392, 80, 0, 0.7f, 1, 392, 0);
-                    Speech.Tone(587, 140, 0, 0.7f, 1, 784, 85);
+                    Speech.Tone(Snd.Recruit, 392, 80, 0, 0.7f, 1, 392, 0);
+                    Speech.Tone(Snd.Recruit, 587, 140, 0, 0.7f, 1, 784, 85);
                     Speech.Say(Loc.T("recruit_called", RecruitName(r), r.mAssistHealth, RecruitMaxHearts(r)), true);
                 }
                 else
@@ -593,15 +626,15 @@ namespace RCGAccess
                 Log.Write("Rekrut getroffen, Herzen " + hearts);
                 if (Settings.RecruitInfo)
                 {
-                    if (hearts <= 0) { Speech.Tone(300, 300, 0, 0.7f, 0, 120, 0); Speech.Say(Loc.T("recruit_lost", RecruitName(r)), false); }
-                    else Speech.Say(Loc.T("recruit_hit", RecruitName(r), hearts), false);
+                    if (hearts <= 0) { Speech.Tone(Snd.Recruit, 300, 300, 0, 0.7f, 0, 120, 0); Speech.Say(Loc.T("recruit_lost", RecruitName(r)), false); }
+                    else Speech.Say(Loc.T(hearts == 1 ? "recruit_hit1" : "recruit_hit", RecruitName(r), hearts), false);
                 }
             }
             if (_recruitState != st)
             {
                 if (st == PlayerRecruit.RecruitState.Idle && _recruitWasUsed && hearts > 0 && Settings.RecruitInfo && !GameInfo.Quiet)
                 {
-                    Speech.Tone(784, 70, 0, 0.5f, 0, 1046, 0);
+                    Speech.Tone(Snd.Recruit, 784, 70, 0, 0.5f, 0, 1046, 0);
                     Speech.Say(Loc.T("recruit_ready", RecruitName(r)), false);
                 }
                 if (st == PlayerRecruit.RecruitState.Idle) _recruitWasUsed = false;
@@ -629,8 +662,8 @@ namespace RCGAccess
             float now = Time.realtimeSinceStartup;
             if (now - _hitToneAt < 0.15f) return;
             _hitToneAt = now;
-            if (Settings.DamageHelp == 2) Speech.Tone(180, 90, 0, 0.6f, 1, 150, 0);   // blocked hit: softer
-            else Speech.Tone(180, 140, 0, 0.8f, 2, 120, 0);
+            if (Settings.DamageHelp == 2) Speech.Tone(Snd.Health, 180, 90, 0, 0.6f, 1, 150, 0);   // blocked hit: softer
+            else Speech.Tone(Snd.Health, 180, 140, 0, 0.8f, 2, 120, 0);
         }
 
         private static float _maxHitDz;
@@ -665,8 +698,8 @@ namespace RCGAccess
             if (_attackWarned.TryGetValue(id, out last) && now - last < 0.6f) return;
             _attackWarned[id] = now;
             float pan = StrongPan(ep.x - pp.x);
-            Speech.Tone(900, 35, pan, 0.7f, 2, 1500, 0);
-            Speech.Tone(900, 35, pan, 0.7f, 2, 1500, 60);
+            Speech.Tone(Snd.Attack, 900, 35, pan, 0.7f, 2, 1500, 0);
+            Speech.Tone(Snd.Attack, 900, 35, pan, 0.7f, 2, 1500, 60);
             Log.Verbose("Angriff: " + EnemyName(e) + " " + st);
         }
 
@@ -697,14 +730,14 @@ namespace RCGAccess
                 Log.Write("Kampfbereich: " + old + " -> " + s);
                 if (s == ScreenLock.State.Running && Settings.EnemyAnnounce)
                 {
-                    Speech.Tone(300, 120, 0, 0.7f, 2, 300, 0);
-                    Speech.Tone(300, 120, 0, 0.7f, 2, 300, 160);
+                    Speech.Tone(Snd.Fight, 300, 120, 0, 0.7f, 2, 300, 0);
+                    Speech.Tone(Snd.Fight, 300, 120, 0, 0.7f, 2, 300, 160);
                     Speech.Say(Loc.T("lock_start"), false);
                 }
                 else if ((s == ScreenLock.State.Cleanup || s == ScreenLock.State.Finished) && old == ScreenLock.State.Running)
                 {
-                    Speech.Tone(523, 120, 0, 0.7f, 0, 523, 0);
-                    Speech.Tone(784, 200, 0, 0.7f, 0, 1046, 130);
+                    Speech.Tone(Snd.Fight, 523, 120, 0, 0.7f, 0, 523, 0);
+                    Speech.Tone(Snd.Fight, 784, 200, 0, 0.7f, 0, 1046, 130);
                     Speech.Say(Loc.T("lock_end"), false);
                 }
             }

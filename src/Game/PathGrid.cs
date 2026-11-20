@@ -97,6 +97,7 @@ namespace RCGAccess
                     continue;
                 }
                 if (!Counts(col)) continue;
+                if (col.name.StartsWith("DroppedItem", StringComparison.Ordinal) || col.GetComponentInParent<PickupObject>() != null) continue;
                 int k = IsObstacle(col, pos.y) ? 2 : 1;
                 if (result == 0 || result == 3 || (k == 2 && result == 1)) { result = k; what = col; }
             }

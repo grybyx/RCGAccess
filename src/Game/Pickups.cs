@@ -78,9 +78,9 @@ namespace RCGAccess
         private static void Announce(string what)
         {
             if (string.IsNullOrEmpty(what)) return;
-            Speech.Tone(880, 70, 0, 0.6f, 1, 880, 0);
-            Speech.Tone(1175, 70, 0, 0.6f, 1, 1175, 75);
-            Speech.Tone(1760, 110, 0, 0.6f, 1, 1760, 150);
+            Speech.Tone(Snd.Pickup, 880, 70, 0, 0.6f, 1, 880, 0);
+            Speech.Tone(Snd.Pickup, 1175, 70, 0, 0.6f, 1, 1175, 75);
+            Speech.Tone(Snd.Pickup, 1760, 110, 0, 0.6f, 1, 1760, 150);
             if (Settings.PickupSpeak) Speech.Say(Loc.T("picked", what), !Combat.InFight);
         }
 

@@ -29,6 +29,7 @@ namespace RCGAccess
         {
             Post(h, typeof(UI_InputSelectable), "ToggleHover", "HoverPost");
             Post(h, typeof(DefenseCollider), "Attemp_Hit", "HitPost");
+            Post(h, typeof(SeamstressController), "DoNeedleCycloneAttack", "CyclonePost");
             Post(h, typeof(UI_StoreItemDisplayV2), "ToggleHover", "StoreHoverPost");
             Post(h, typeof(UI_CharacterSelectOption), "OnHover", "CharHoverPost");
             Post(h, typeof(UI_FileSelectOption), "OnHover", "FileHoverPost");
@@ -61,6 +62,13 @@ namespace RCGAccess
                 Log.Write("Patch aktiv: Player.Stamina (Schutz vor Schaden)");
             }
             catch (Exception e) { Log.Error("Patch Player.Stamina", e); }
+            try
+            {
+                MethodInfo set = AccessTools.PropertySetter(typeof(CombatEntity), "Stamina");
+                h.Patch(set, new HarmonyMethod(typeof(Patches).GetMethod("BossStaminaPre", BindingFlags.Static | BindingFlags.Public)));
+                Log.Write("Patch aktiv: CombatEntity.Stamina (Schaden an Bossen)");
+            }
+            catch (Exception e) { Log.Error("Patch CombatEntity.Stamina", e); }
             Post(h, typeof(InteractEntity_DropV2), "Interact", "DropV2Post", new Type[] { typeof(int), typeof(bool).MakeByRefType() });
             Post(h, typeof(InteractEntity_QuestNPC), "Interact", "QuestNpcPost", new Type[] { typeof(CombatEntity), typeof(bool).MakeByRefType() });
             Post(h, typeof(InteractEntity_QuestNPC), "Interact", "QuestNpcIdPost", new Type[] { typeof(int), typeof(bool).MakeByRefType() });
@@ -173,6 +181,26 @@ namespace RCGAccess
             catch (Exception e) { Log.Error("StaminaPre", e); }
         }
 
+        /// <summary>Damage to bosses: double, fourfold or down to the next phase threshold (the game's
+        /// BossBaseEntity.CheckForHealthChange clamps the health to the phase limit, so a phase is never skipped).</summary>
+        public static void BossStaminaPre(CombatEntity __instance, ref int __0)
+        {
+            try
+            {
+                if (Settings.BossDamage == 0) return;
+                BossBaseEntity b = __instance as BossBaseEntity;
+                if (b == null) return;
+                int cur = b.Stamina;
+                if (__0 >= cur || cur <= 0) return;
+                if (GameState.CurrentState != GameStates.Playing) return;
+                int loss = cur - __0;
+                int nv = Settings.BossDamage == 1 ? cur - loss * 2 : Settings.BossDamage == 2 ? cur - loss * 4 : 0;
+                __0 = Mathf.Max(0, nv);
+                Log.Write("Boss-Schaden: " + b.name + " " + cur + " -> " + __0 + " (Spiel: -" + loss + ")");
+            }
+            catch (Exception e) { Log.Error("BossStaminaPre", e); }
+        }
+
         public static void RecruitPost(PlayerRecruit __instance, bool __result)
         {
             try { if (__instance._Player != null && __instance._Player.PlayerID == 0) Combat.OnRecruit(__result); } catch { }
@@ -182,6 +210,8 @@ namespace RCGAccess
         {
             try { Combat.OnRecruitButton(__instance._Player); } catch { }
         }
+
+        public static void CyclonePost() { try { BossHelp.OnCyclone(); } catch { } }
 
         private static float _hitLogAt;
 

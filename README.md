@@ -4,7 +4,7 @@
 
 RCGAccess makes the beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) playable for blind and visually impaired players. The mod reads menus, dialogs and pop-ups in the game's language, through the modern Windows OneCore voices, classic SAPI voices or your own screen reader. It adds orientation sounds for enemies, exits, items and health, and a navigator that guides you to doors and goals.
 
-> **Pre-release (beta), 0.4.1.** Tested into the third area (Shopping district). Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
+> **Pre-release (beta), 0.4.6.** Tested into the third area (Shopping district), up to and including the boss Hibari. Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
 
 ## About the game
 
@@ -43,7 +43,9 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
   - The mod learns a room map and finds the way to the quest from the map markers.
 - **Health and pickups:** tones for damage, healing and low health. Pickups and money are announced. Boss health is announced in steps.
 - **Shops:** your money is announced on opening and after each purchase; items you cannot afford are marked.
+- **Bosses:** own locator sound (in the air, on your line, can be hit now), announced boss moves; with Hibari a calculated spot for the homing needle and guidance to her while she is stunned (left stick).
 - **Damage protection** (optional): half damage or invulnerable.
+- **Boss help** (optional): double or fourfold damage to bosses, or one hit per fight phase; "Ease boss mechanics" makes special boss tasks succeed (Hibari's needle always hits).
 - **Mod menu (F11)** with submenus: every feature can be switched on or off, features with their own sound play it, "Listen to all sounds" explains all sounds. It opens on the first start, before the game begins.
 
 ## Installation
@@ -104,7 +106,7 @@ After playing, run `RCGAccess_Daten_sammeln.bat` in the game folder. It puts a Z
 
 RCGAccess macht das Beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) für blinde und sehbehinderte Spielerinnen und Spieler spielbar. Der Mod liest Menüs, Dialoge und Einblendungen in der Sprache des Spiels vor, wahlweise mit den modernen Windows-Stimmen (OneCore), klassischen SAPI-Stimmen oder über deinen Screenreader. Dazu kommen Orientierungstöne für Gegner, Ausgänge, Gegenstände und Gesundheit sowie ein Navigator, der dich zu Türen und Zielen führt.
 
-> **Vorabversion (Beta), 0.4.1.** Getestet ist das Spiel bis in das dritte Gebiet (Einkaufsviertel). Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
+> **Vorabversion (Beta), 0.4.6.** Getestet ist das Spiel bis in das dritte Gebiet (Einkaufsviertel), einschließlich des Bosses Hibari. Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
 
 ## Über das Spiel
 
@@ -143,7 +145,9 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
   - Der Mod lernt eine Raumkarte und erkennt den Weg zur Quest über die Kartenmarkierungen.
 - **Gesundheit und Fundstücke:** Töne bei Schaden, Heilung und niedriger Gesundheit. Ansage von Eingesammeltem und Geld. Bossenergie in Schritten.
 - **Läden:** Ansage des eigenen Geldes beim Öffnen und nach jedem Kauf, zu teure Waren werden genannt.
+- **Bosse:** eigenes Ortungsgeräusch (in der Luft, auf deiner Linie, jetzt treffbar), Ansage der Boss-Angriffe; bei Hibari eine berechnete Stelle für die Zielnadel und Hinführen zu ihr, solange sie benommen ist (linker Stick).
 - **Schutz vor Schaden** (wählbar): halber Schaden oder unverwundbar.
+- **Boss-Hilfe** (wählbar): doppelter oder vierfacher Schaden an Bossen oder ein Treffer pro Kampfphase; „Boss-Mechaniken erleichtern“ lässt besondere Boss-Aufgaben gelingen (Hibaris Nadel trifft immer).
 - **Mod-Menü (F11)** mit Untermenüs: Alle Funktionen lassen sich einzeln schalten, jede Funktion mit eigenem Ton spielt ihn vor, „Alle Töne anhören“ erklärt alle Töne. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt.
 
 ## Installation

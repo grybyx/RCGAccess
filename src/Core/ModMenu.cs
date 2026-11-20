@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -136,17 +136,11 @@ namespace RCGAccess
             Add(texts, "m_hints", () => Settings.Hints, v => Settings.Hints = v);
             Add(texts, "m_room", () => Settings.RoomAnnounce, v => Settings.RoomAnnounce = v);
             Add(texts, "m_pickupspeak", () => Settings.PickupSpeak, v => Settings.PickupSpeak = v, delegate { Samples.Pickup(0); });
+            Vol(texts, "m_vol_pickup", () => Settings.PickupVolume, v => Settings.PickupVolume = v, delegate { Samples.Pickup(0); });
             Add(texts, "m_moneyspeak", () => Settings.MoneySpeak, v => Settings.MoneySpeak = v);
 
             List<Entry> fight = new List<Entry>();
             Add(fight, "m_radar", () => Settings.Radar, v => Settings.Radar = v, delegate { Samples.Knock(0); });
-            Add(fight, "m_linetone", () => Settings.LineTone, v => Settings.LineTone = v, delegate { Samples.Line(0); });
-            Add(fight, "m_radarheight", () => Settings.RadarHeight, v => Settings.RadarHeight = v, delegate
-            {
-                float kv = Settings.KnockVolume / 100f;
-                Speech.RawTone(Combat.LowPitch * 1.22f, 60, 0, kv, 0, Combat.LowPitch, 0);
-                Speech.RawTone(Combat.LowPitch * 0.8f, 60, 0, kv, 0, Combat.LowPitch * 0.68f, 500);
-            });
             fight.Add(new Number
             {
                 Key = "m_knockvol", Min = 0, Max = 200, Step = 10, Unit = "%",
@@ -155,17 +149,32 @@ namespace RCGAccess
                 Preview = delegate { Combat.PreviewKnock(); },
                 Sample = delegate { Combat.PreviewKnock(); }
             });
+            Add(fight, "m_linetone", () => Settings.LineTone, v => Settings.LineTone = v, delegate { Samples.Line(0); });
+            Vol(fight, "m_vol_line", () => Settings.LineVolume, v => Settings.LineVolume = v, delegate { Samples.LineHigh(0); });
+            Add(fight, "m_radarheight", () => Settings.RadarHeight, v => Settings.RadarHeight = v, delegate
+            {
+                float kv = Settings.KnockVolume / 100f;
+                Speech.RawTone(Combat.LowPitch * 1.22f, 60, 0, kv, 0, Combat.LowPitch, 0);
+                Speech.RawTone(Combat.LowPitch * 0.8f, 60, 0, kv, 0, Combat.LowPitch * 0.68f, 500);
+            });
             fight.Add(new Number
             {
                 Key = "m_radarrange", Min = 4, Max = 20, Step = 1, Unit = Loc.T("unit_m"),
                 Get = delegate { return Settings.RadarRange; },
                 Set = delegate (int v) { Settings.RadarRange = v; }
             });
+            Add(fight, "m_bossbeacon", () => Settings.BossBeacon, v => Settings.BossBeacon = v, delegate { Samples.Boss(0); });
+            Vol(fight, "m_vol_boss", () => Settings.BossVolume, v => Settings.BossVolume = v, delegate { BossHelp.Beep(-1.5f, 0f, false, false, 0); });
+            Add(fight, "m_bossmoves", () => Settings.BossMoves, v => Settings.BossMoves = v);
             Add(fight, "m_enemyannounce", () => Settings.EnemyAnnounce, v => Settings.EnemyAnnounce = v, delegate { Samples.Fight(0); });
+            Vol(fight, "m_vol_fight", () => Settings.FightVolume, v => Settings.FightVolume = v, delegate { Samples.Fight(0); });
             Add(fight, "m_attackwarn", () => Settings.AttackWarn, v => Settings.AttackWarn = v, delegate { Samples.Attack(0); });
+            Vol(fight, "m_vol_attack", () => Settings.AttackVolume, v => Settings.AttackVolume = v, delegate { Samples.Attack(0); });
             Add(fight, "m_health", () => Settings.HealthTones, v => Settings.HealthTones = v, delegate { Samples.Health(0); });
+            Vol(fight, "m_vol_health", () => Settings.HealthVolume, v => Settings.HealthVolume = v, delegate { Samples.Health(0); });
             Add(fight, "m_boss", () => Settings.BossHealth, v => Settings.BossHealth = v);
-            Add(fight, "m_recruitinfo", () => Settings.RecruitInfo, v => Settings.RecruitInfo = v, delegate { Speech.Tone(392, 80, 0, 0.7f, 1, 392, 0); Speech.Tone(587, 140, 0, 0.7f, 1, 784, 85); Speech.Tone(784, 70, 0, 0.5f, 0, 1046, 800); });
+            Add(fight, "m_recruitinfo", () => Settings.RecruitInfo, v => Settings.RecruitInfo = v, delegate { Samples.Recruit(0); });
+            Vol(fight, "m_vol_recruit", () => Settings.RecruitVolume, v => Settings.RecruitVolume = v, delegate { Samples.Recruit(0); });
             fight.Add(new Choice
             {
                 Key = "m_countbtn",
@@ -185,14 +194,27 @@ namespace RCGAccess
                 Get = delegate { return Settings.DamageHelp; },
                 Set = delegate (int v) { Settings.DamageHelp = v; }
             });
+            fight.Add(new Choice
+            {
+                Key = "m_bossdmg",
+                Options = delegate { return new List<string> { Loc.T("bossdmg_0"), Loc.T("bossdmg_1"), Loc.T("bossdmg_2"), Loc.T("bossdmg_3") }; },
+                Get = delegate { return Settings.BossDamage; },
+                Set = delegate (int v) { Settings.BossDamage = v; }
+            });
+            Add(fight, "m_bossassist", () => Settings.BossAssist, v => Settings.BossAssist = v);
 
             List<Entry> nav = new List<Entry>();
             Add(nav, "m_padkeys", () => Settings.PadKeys, v => Settings.PadKeys = v);
             Add(nav, "m_lswalk", () => Settings.LsWalk, v => Settings.LsWalk = v);
+            Vol(nav, "m_vol_beacon", () => Settings.BeaconVolume, v => Settings.BeaconVolume = v, delegate { Samples.Beacon(0); });
             Add(nav, "m_interact", () => Settings.Interact, v => Settings.Interact = v, delegate { Samples.Interact(0); });
+            Vol(nav, "m_vol_interact", () => Settings.InteractVolume, v => Settings.InteractVolume = v, delegate { Samples.Interact(0); });
             Add(nav, "m_itemnav", () => Settings.ItemNav, v => Settings.ItemNav = v, delegate { Samples.ItemAppears(0); });
+            Vol(nav, "m_vol_item", () => Settings.ItemVolume, v => Settings.ItemVolume = v, delegate { Samples.ItemAppears(0); });
             Add(nav, "m_deadend", () => Settings.DeadEnd, v => Settings.DeadEnd = v, delegate { Samples.Wall(0); Samples.Obstacle(700); });
+            Vol(nav, "m_vol_wall", () => Settings.WallVolume, v => Settings.WallVolume = v, delegate { Samples.Wall(0); Samples.Obstacle(700); });
             Add(nav, "m_hazards", () => Settings.Hazards, v => Settings.Hazards = v, delegate { Samples.Pit(0); Samples.Toy(700); });
+            Vol(nav, "m_vol_hazard", () => Settings.HazardVolume, v => Settings.HazardVolume = v, delegate { Samples.Pit(0); Samples.Toy(700); });
             Add(nav, "m_autowalkstop", () => Settings.AutoWalkStopForEnemies, v => Settings.AutoWalkStopForEnemies = v);
             Add(nav, "m_walkrun", () => Settings.WalkRun, v => Settings.WalkRun = v);
             Add(nav, "m_autodoor", () => Settings.AutoDoor, v => Settings.AutoDoor = v);
@@ -207,6 +229,7 @@ namespace RCGAccess
                 Sample = delegate { Samples.Beacon(0); }
             });
             Add(sound, "m_moneytones", () => Settings.MoneyTones, v => Settings.MoneyTones = v, delegate { Samples.Money(0); });
+            Vol(sound, "m_vol_money", () => Settings.MoneyVolume, v => Settings.MoneyVolume = v, delegate { Samples.Money(0); });
             Add(sound, "m_duckspeech", () => Settings.DuckSpeech, v => Settings.DuckSpeech = v);
             Add(sound, "m_ducktones", () => Settings.DuckTones, v => Settings.DuckTones = v);
             sound.Add(new Number
@@ -239,6 +262,19 @@ namespace RCGAccess
         {
             children.Add(new ActionEntry { Key = "m_back", Run = delegate { Back(); } });
             return new SubMenu { Key = key, Children = children };
+        }
+
+        /// <summary>Volume of one group of sounds, 0 to 200 percent; each change plays the sound.</summary>
+        private static void Vol(List<Entry> list, string key, Func<int> get, Action<int> set, Action sample)
+        {
+            list.Add(new Number
+            {
+                Key = key, Min = 0, Max = 200, Step = 10, Unit = "%",
+                Get = delegate { return get(); },
+                Set = delegate (int v) { set(v); },
+                Preview = sample,
+                Sample = sample
+            });
         }
 
         private static void Add(List<Entry> list, string key, Func<bool> get, Action<bool> set)

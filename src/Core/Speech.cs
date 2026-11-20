@@ -168,6 +168,12 @@ namespace RCGAccess
         }
 
         /// <summary>Orientation tone scaled by the orientation tone volume.</summary>
+        /// <summary>A tone of one sound group: master volume (all tones) times the group's own volume.</summary>
+        public static void Tone(Snd group, float freq, float ms, float pan, float vol, int wave, float endFreq, float delayMs)
+        {
+            Tone(freq, ms, pan, vol * Settings.GroupVolume(group) / 100f, wave, endFreq, delayMs);
+        }
+
         public static void Tone(float freq, float ms, float pan, float vol, int wave, float endFreq, float delayMs)
         {
             RawTone(freq, ms, pan, vol * Settings.ToneVolume / 100f, wave, endFreq, delayMs);

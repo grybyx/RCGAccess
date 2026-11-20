@@ -18,7 +18,7 @@ namespace RCGAccess
 
     public static class Mod
     {
-        public const string Version = "0.4.1";
+        public const string Version = "0.4.6";
         public static string GameDir;
         public static string DataDir;
         public static string ProtoDir;
@@ -57,6 +57,7 @@ namespace RCGAccess
                 Log.Write("Szene geladen: " + scene.name + " (" + mode + ")");
                 UiReader.OnSceneLoaded(scene.name);
                 Navigator.OnSceneLoaded(scene.name);
+                BossHelp.OnSceneLoaded();
                 Combat.OnSceneLoaded(scene.name);
             }
             catch (Exception e) { Log.Error("OnSceneLoaded", e); }
@@ -110,6 +111,7 @@ namespace RCGAccess
                 PhoneHelp.Update();
                 NpcHelp.Update();
                 Combat.Update();
+                BossHelp.Update();
                 Navigator.Update();
             }
             catch (Exception e) { Log.Error("Update", e); }

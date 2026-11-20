@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -7,10 +7,13 @@ using System.Text;
 
 namespace RCGAccess
 {
+    /// <summary>Groups of sounds with their own volume in the mod menu.</summary>
+    public enum Snd { Radar, Line, Boss, Attack, Health, Fight, Recruit, Beacon, Interact, Item, Wall, Hazard, Pickup, Money }
+
     /// <summary>All switches and values of the mod (RCGAccess\RCGAccess.ini).</summary>
     public static class Settings
     {
-        public const int CurrentMenuVersion = 11;
+        public const int CurrentMenuVersion = 14;
 
         // Funktionen
         public static bool Menus = true;
@@ -31,6 +34,8 @@ namespace RCGAccess
         public static bool PickupSpeak = true;
         public static bool ItemNav = true;
         public static int DamageHelp = 0;        // 0 aus, 1 halber Schaden, 2 unverwundbar
+        public static int BossDamage = 0;        // 0 normal, 1 doppelt, 2 vierfach, 3 ein Treffer pro Phase
+        public static bool BossAssist = false;   // boss mechanics succeed (Hibari's homing needle always hits)
         public static int EnemyCountButton = 0; // 0 automatisch, 1 LB, 2 RB, 3 LT, 4 RT, 5 Back, 6 aus
         public static bool PadKeys = true;
         public static bool AutoWalkStopForEnemies = true;
@@ -45,6 +50,35 @@ namespace RCGAccess
         public static int ModLang = 0;          // 0 automatisch, 1 Deutsch, 2 English
         public static bool RecruitInfo = true;
         public static bool LsWalk = true;
+        // own volume (percent, 0 to 200) for each group of sounds
+        public static int LineVolume = 100, BossVolume = 100, AttackVolume = 100, HealthVolume = 100, FightVolume = 100,
+            RecruitVolume = 100, BeaconVolume = 100, InteractVolume = 100, ItemVolume = 100, WallVolume = 100,
+            HazardVolume = 100, PickupVolume = 100, MoneyVolume = 100;
+
+        public static int GroupVolume(Snd g)
+        {
+            switch (g)
+            {
+                case Snd.Radar: return KnockVolume;
+                case Snd.Line: return LineVolume;
+                case Snd.Boss: return BossVolume;
+                case Snd.Attack: return AttackVolume;
+                case Snd.Health: return HealthVolume;
+                case Snd.Fight: return FightVolume;
+                case Snd.Recruit: return RecruitVolume;
+                case Snd.Beacon: return BeaconVolume;
+                case Snd.Interact: return InteractVolume;
+                case Snd.Item: return ItemVolume;
+                case Snd.Wall: return WallVolume;
+                case Snd.Hazard: return HazardVolume;
+                case Snd.Pickup: return PickupVolume;
+                case Snd.Money: return MoneyVolume;
+            }
+            return 100;
+        }
+
+        public static bool BossBeacon = true;   // own locator sound for bosses (and Hibari's needle)
+        public static bool BossMoves = true;    // announce boss moves and phases
         public static bool RadarHeight = false; // off-line radar tone a little higher/lower for enemies above/below       // left stick press = automatic guiding (instead of the game's taunt), right stick press = guided navigation  // feedback for calling the recruit (LT)
         public static int SpeechEngine = 0;     // 0 OneCore (Prism), 1 SAPI, 2 Screenreader (Prism)
         // chosen voice per language (primary language id in hex): "7:Microsoft Katja;9:Microsoft Zira"

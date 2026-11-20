@@ -1,5 +1,59 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.4.1
+Version 0.4.6
+
+New in version 0.4.6
+- Ease boss mechanics, Hibari: the needle now really hits every time. Before, it often did not bounce at all because
+  it hit you first; now it hits Hibari as soon as it comes close to you. Hibari stays stunned 6 seconds longer.
+- Stunned boss as a navigator target: while Hibari lies stunned, she is at the top of the target list. Pressing the
+  left stick leads you straight to her (also past enemies, running); "At Hibari. Attack!" once you are close on her
+  line. Pressing the right stick guides you there with the tone. When she gets up, guiding ends.
+
+New in version 0.4.5
+- New under Enemies and fighting: "Damage to bosses" (normal, double, fourfold, one hit per phase). Bosses have fixed
+  fight phases; with "one hit per phase" each of your hits sends the boss into its next phase, two to four hits
+  defeat it. A single hit for the whole fight is not possible because the game enforces the phases. Hibari can only
+  be hurt while she lies stunned on the floor.
+- New under Enemies and fighting: "Ease boss mechanics" (off). With Hibari the homing needle always hits her after
+  its first bounce, wherever you stand; just run under the needle. Then she falls and is stunned: the triad and the
+  announcement tell you where she lies.
+- Hibari, homing needle without assist: the calculation now includes depth. The needle flies at an angle towards
+  you and keeps drifting in depth after bouncing; if you are not on Hibari's line it misses her. The announcement
+  therefore also says up or down ("Good spot: left 2 meters, 1 meter up"); the tone gets higher when you are too
+  far up, lower when too far down. In 0.4.4 the arena was not detected, so it always said "no safe spot"; fixed.
+- Several new enemies at once are all named, e.g. "2 new enemies: Schoolgirl left 3 meters, Schoolgirl right
+  4 meters". Before, only one was named while the radar followed the nearer one, so the tone sometimes came from
+  the right although "left" was announced.
+
+New in version 0.4.4
+- Hibari, homing needle: the mod calculates how the needle bounces off walls, floor and ceiling and finds the
+  nearest spot from where it hits Hibari. Announcement "Good spot: right 3 meters", then a tone guides you there
+  (from the spot's direction); a steady high tone = stay here. When she shoots: "Needle! Run under it!" (hit
+  predicted) or "Needle! Dodge!".
+- Hibari stunned: the announcement also says where she lies ("right 4 meters").
+- Dropped items (e.g. an apple) no longer count as obstacles.
+
+New in version 0.4.3
+- Own volume for each sound: in the mod menu every toggle with a sound is directly followed by its volume (0 to 200
+  percent), e.g. "Enemy radar", then "Enemy radar volume". New volumes for: high on-your-line tone, boss locator,
+  fight sounds, attack warning, health, recruit, beacon and guided navigation, interaction, items, wall and
+  obstacle, abyss and toy, pickup, money. "Volume of all sounds" (Sounds and volume) stays the base volume. Each
+  change plays the sound.
+- Boss announcements with explanation only the first time, then short ("Homing needle!", "Needle storm!",
+  "Stunned, attack!").
+- Hibari: with the homing needle the mod says which lower corner to go to (opposite Hibari) and how far it is.
+  Run under the needle there, don't jump over it; then it bounces and hits Hibari.
+
+New in version 0.4.2
+- Boss locator (Enemies and fighting, on): the boss has its own sound, separate from the enemy radar, which then
+  follows the other enemies. Low double hum from its side = not on your line, higher double hum = on your line,
+  faster = closer. Rising tone = boss in the air, cannot be reached now. Bright double tone = can be hit now.
+- Announce boss moves (Enemies and fighting, on). With Hibari: "needle storm, dodge", "homing needle coming at you"
+  (plus fast high ticks from the needle's direction; lower when it flies back to Hibari), "Hit, Hibari is falling",
+  "Hibari is stunned on the floor, attack now" with a triad, "3 seconds left", "Hibari is back up", "needle cyclone,
+  keep away". Other bosses: the name of the move.
+- How to beat Hibari: she mostly flies up high and cannot be hit then. Dodge the homing needle; when it bounces and
+  hits Hibari, she falls and lies stunned on the floor for about 7 seconds. Attack then.
+- Recruit: one LT press was announced twice ("comes to help" and "already fighting"); fixed. "1 heart".
 
 New in version 0.4.1
 - Quest areas as navigator targets: spots where something starts as soon as you walk in (a conversation, a quest
@@ -238,7 +292,7 @@ INSTALLATION
 1. Extract the ZIP into the game folder (the folder containing RiverCityGirls.exe,
    on Steam usually C:\Program Files (x86)\Steam\steamapps\common\River City Girls).
 2. Start the game. The mod loader BepInEx sets itself up on the first start, which may take a few seconds longer.
-3. On the first start the mod says "RCGAccess 0.4.1 loaded" and opens its mod menu before the game continues.
+3. On the first start the mod says "RCGAccess 0.4.4 loaded" and opens its mod menu before the game continues.
    "Save and close" starts the game.
 
 Requirements: Windows 10 or 11 with .NET Framework 4 (included in Windows) and a voice in the game language:
@@ -263,7 +317,7 @@ Main menu:
   speech rate, speech volume.
 - Reading: menus, dialogs, chatter, tutorials and pop-ups, room announcement, pickups, money amount.
 - Enemies and fighting: radar, bright click on your line, knock volume, radar range, enemy announcements, attack
-  warning, health sounds, boss health, enemy count button, damage protection.
+  warning, health sounds, boss health, enemy count button, damage protection, damage to bosses, ease boss mechanics.
 - Navigation and guiding: mod functions on the controller, interaction hints, items as targets, dead end hints,
   pit warning, pause guiding for enemies, run while guiding, open doors.
 - Sounds and volume: orientation sound volume, money sounds, lower the game during speech or sounds, how much,

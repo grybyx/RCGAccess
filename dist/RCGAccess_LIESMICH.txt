@@ -1,5 +1,62 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.4.1
+Version 0.4.6
+
+Neu in Version 0.4.6
+- Boss-Mechaniken erleichtern, Hibari: Die Nadel trifft jetzt wirklich jedes Mal. Vorher prallte sie oft gar nicht
+  ab, weil sie zuerst dich traf; jetzt trifft sie Hibari schon, wenn sie dir nahe kommt. Hibari bleibt 6 Sekunden
+  länger benommen.
+- Benommener Boss als Navigator-Ziel: Liegt Hibari benommen am Boden, steht sie ganz oben in der Zielliste. Linken
+  Stick drücken führt dich direkt zu ihr (auch zwischen Gegnern, mit Rennen); "Bei Hibari. Angreifen!", sobald du
+  nah genug auf ihrer Linie stehst. Rechten Stick drücken führt mit Ton hin. Steht sie wieder auf, endet die Führung.
+
+Neu in Version 0.4.5
+- Neu unter Gegner und Kampf: "Schaden an Bossen" (normal, doppelt, vierfach, ein Treffer pro Phase). Bosse haben
+  feste Kampfphasen; bei "ein Treffer pro Phase" bringt jeder deiner Treffer den Boss in die nächste Phase, nach
+  zwei bis vier Treffern ist er besiegt. Ein einziger Treffer für den ganzen Kampf geht nicht, weil das Spiel die
+  Phasen erzwingt. Bei Hibari zählen deine Treffer nur, wenn sie benommen am Boden liegt.
+- Neu unter Gegner und Kampf: "Boss-Mechaniken erleichtern" (aus). Bei Hibari trifft die Zielnadel sie nach dem
+  ersten Abprall immer, egal wo du stehst; lauf nur unter der Nadel durch. Danach stürzt sie und ist benommen:
+  der Dreiklang und die Ansage sagen dir, wo sie liegt.
+- Hibari, Zielnadel ohne Erleichterung: Die Berechnung beachtet jetzt auch die Tiefe. Die Nadel fliegt schräg zu
+  dir und driftet nach dem Abprall weiter in der Tiefe; stehst du nicht auf Hibaris Linie, fliegt sie an ihr vorbei.
+  Die Ansage nennt deshalb auch oben oder unten ("Gute Stelle: links 2 Meter, 1 Meter nach oben"); der Ton wird
+  höher, wenn du zu weit oben bist, tiefer, wenn zu weit unten. Die Arena wurde in 0.4.4 nicht erkannt, daher kam
+  immer "keine sichere Stelle"; behoben.
+- Mehrere neue Gegner auf einmal werden alle genannt, zum Beispiel "2 neue Gegner: Schülerin links 3 Meter,
+  Schülerin rechts 4 Meter". Vorher nannte der Mod nur eine, während das Radar der näheren folgte; daher kam der
+  Ton manchmal von rechts, obwohl "links" angesagt wurde.
+
+Neu in Version 0.4.4
+- Hibari, Zielnadel: Der Mod berechnet, wie die Nadel an Wänden, Boden und Decke abprallt, und sucht die nächste
+  Stelle, von der aus sie Hibari trifft. Ansage "Gute Stelle: rechts 3 Meter", dann führt ein Ton dorthin (aus der
+  Richtung der Stelle); hoher, gleichbleibender Ton = hier stehen bleiben. Beim Abschuss: "Nadel! Drunter durch!"
+  (Vorhersage Treffer) oder "Nadel! Ausweichen!".
+- Hibari benommen: Die Ansage nennt jetzt auch, wo sie liegt ("rechts 4 Meter").
+- Fallengelassene Gegenstände (zum Beispiel ein Apfel) gelten nicht mehr als Hindernis.
+
+Neu in Version 0.4.3
+- Eigene Lautstärke für jeden Ton: Im Mod-Menü folgt auf jeden Schalter mit Ton direkt seine Lautstärke (0 bis
+  200 Prozent), zum Beispiel "Gegner-Radar", dann "Lautstärke Gegner-Radar". Neu sind Lautstärken für: hoher Ton
+  auf deiner Linie, Boss-Ortung, Kampftöne, Angriffswarnung, Gesundheit, Rekrut, Peilton und geführte Navigation,
+  Interaktion, Gegenstände, Wand und Hindernis, Abgrund und Spielzeug, Einsammeln, Geld. "Lautstärke aller Töne"
+  (Töne und Lautstärke) bleibt die Grundlautstärke. Jede Änderung spielt den Ton vor.
+- Boss-Ansagen mit Erklärung nur beim ersten Mal, danach kurz ("Zielnadel!", "Nadelhagel!", "Benommen, angreifen!").
+- Hibari: Bei der Zielnadel sagt der Mod, in welche untere Ecke du gehen sollst (gegenüber von Hibari) und wie weit
+  es ist. Dort unter der Nadel durchlaufen, nicht drüberspringen; dann prallt sie ab und trifft Hibari.
+
+Neu in Version 0.4.2
+- Boss-Ortung (Gegner und Kampf, an): Der Boss hat ein eigenes Geräusch, getrennt vom Gegner-Radar, das dann den
+  übrigen Gegnern folgt. Tiefes Doppel-Brummen von seiner Seite = nicht auf deiner Linie, höheres Doppel-Brummen =
+  auf deiner Linie, schneller = näher. Ansteigender Ton = Boss in der Luft, gerade nicht erreichbar. Heller
+  Doppelton = jetzt treffbar.
+- Boss-Angriffe ansagen (Gegner und Kampf, an). Bei Hibari: "Nadelhagel, ausweichen", "Zielnadel kommt auf dich
+  zu" (dazu schnelles hohes Ticken aus der Richtung der Nadel; tiefer, wenn sie zu Hibari zurückfliegt),
+  "Getroffen, Hibari stürzt ab", "Hibari ist benommen am Boden, jetzt angreifen" mit Dreiklang, "Noch 3 Sekunden",
+  "Hibari steht wieder auf", "Nadelwirbel, Abstand halten". Andere Bosse: der Name des Angriffs.
+- So besiegst du Hibari: Sie fliegt meist oben und ist dann nicht zu treffen. Weiche der Zielnadel aus; prallt sie
+  ab und trifft Hibari, stürzt sie und liegt etwa 7 Sekunden benommen am Boden. Dann angreifen.
+- Rekrut: Ein Druck auf LT wurde doppelt angesagt ("kommt zu Hilfe" und "kämpft schon"); behoben. "1 Herz" statt
+  "1 Herzen".
 
 Neu in Version 0.4.1
 - Aufgabenbereiche als Navigator-Ziel: Stellen, an denen etwas beginnt, sobald du hineinläufst (Gespräch,
@@ -278,7 +335,7 @@ INSTALLATION
    Danach liegen dort unter anderem: winhttp.dll, doorstop_config.ini, der Ordner BepInEx und der Ordner RCGAccess.
 2. Das Spiel normal starten. Der Mod-Loader BepInEx richtet sich beim ersten Start selbst ein,
    das kann ein paar Sekunden länger dauern.
-3. Beim ersten Start sagt der Mod "RCGAccess 0.4.1 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
+3. Beim ersten Start sagt der Mod "RCGAccess 0.4.4 geladen" und öffnet sein Mod-Menü, bevor das Spiel weiterläuft.
    Erst mit "Speichern und schließen" geht es ins Spiel.
 
 Voraussetzungen: Windows 10 oder 11 mit .NET Framework 4 (ist bei Windows dabei) und eine Stimme in der
@@ -307,7 +364,7 @@ Hauptmenü:
   Eingesammeltes ansagen, Geldbetrag ansagen.
 - Gegner und Kampf: Gegner-Radar, heller Klick auf deiner Linie, Lautstärke Gegner-Klopfen (0 bis 200 %),
   Reichweite des Radars, Gegner ansagen, Angriffswarnung, Gesundheitstöne, Boss-Energie, Taste für die
-  Gegnerzahl, Schutz vor Schaden.
+  Gegnerzahl, Schutz vor Schaden, Schaden an Bossen, Boss-Mechaniken erleichtern.
 - Navigation und Hinführen: Mod-Funktionen am Controller, Interaktionshinweise, Gegenstände als Ziele,
   Sackgassen-Hinweis, Gruben-Warnung, Hinführen bei Gegnern anhalten, beim Hinführen rennen, Türen öffnen.
 - Töne und Lautstärke: Lautstärke der Orientierungstöne, Geld-Töne, Spiel leiser bei Sprache, Spiel leiser bei

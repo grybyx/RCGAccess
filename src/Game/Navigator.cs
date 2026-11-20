@@ -13,7 +13,7 @@ namespace RCGAccess
     /// dead-end hints, pit warnings, interaction hints and a learned room map for quest directions.</summary>
     public static class Navigator
     {
-        public enum Kind { Exit, Shop, Person, Thing, Climb, Weapon, Item, Beggar }
+        public enum Kind { Exit, Shop, Person, Thing, Climb, Weapon, Item, Beggar, Boss }
 
         public class Target
         {
@@ -310,6 +310,8 @@ namespace RCGAccess
                 AddItemTargets();
                 foreach (EnemyEnitity e in Combat.Enemies())
                     if (Combat.IsBegging(e)) _targets.Add(new Target { Kind = Kind.Beggar, Obj = e, Name = Loc.T("beggar_target", Combat.EnemyName(e)) });
+                if (BossHelp.Boss != null && BossHelp.BossVulnerable(BossHelp.Boss))
+                    _targets.Add(new Target { Kind = Kind.Boss, Obj = BossHelp.Boss, Name = Loc.T("boss_target", Combat.EnemyName(BossHelp.Boss)) });
                 foreach (Climable cl in UnityEngine.Object.FindObjectsOfType<Climable>())
                 {
                     if (!cl.isActiveAndEnabled) continue;
@@ -343,6 +345,7 @@ namespace RCGAccess
         {
             if (t.Area != null) return _areasEntered.Contains(t.Area.GetInstanceID()) ? 4 : -3;
             if (t.RoomGoal != null) return -1;
+            if (t.Kind == Kind.Boss) return -5;
             if (t.Kind == Kind.Beggar) return -2;
             if (t.Kind == Kind.Item) return 0;
             if (t.Kind == Kind.Exit)
@@ -590,7 +593,7 @@ namespace RCGAccess
             _selObj = best;
             _selRoom = null;
             BuildTargets();
-            Speech.Tone(1046, 80, Combat.StrongPan(best.transform.position.x - p.transform.position.x), 0.6f, 0, 1568, 0);
+            Speech.Tone(Snd.Item, 1046, 80, Combat.StrongPan(best.transform.position.x - p.transform.position.x), 0.6f, 0, 1568, 0);
             string s = Loc.T("item_appeared", name, GameInfo.Direction(p.transform.position, Walkable(best.transform.position)));
             if (count > 1) s = Loc.T("items_appeared", count) + " " + s;
             if (Settings.PadKeys) s += " " + Loc.T("item_guide_help");
@@ -727,7 +730,7 @@ namespace RCGAccess
             else if (dz < -0.5f) f *= Mathf.Lerp(0.8f, 0.5f, Mathf.Clamp01((-dz - 0.5f) / 4f));
             int wave = quest ? 2 : (kind == Kind.Exit ? 1 : 0);
             float vol = quest ? 0.45f : 0.7f;
-            Speech.Tone(f, 70, GameInfo.Pan(dx, 8f), vol, wave, f, delay);
+            Speech.Tone(Snd.Beacon, f, 70, GameInfo.Pan(dx, 8f), vol, wave, f, delay);
         }
 
         // ---------------- update ----------------
@@ -765,7 +768,7 @@ namespace RCGAccess
                     if (!_arrivedSaid)
                     {
                         _arrivedSaid = true;
-                        Speech.Tone(392, 250, 0, 0.7f, 0, 784, 0);
+                        Speech.Tone(Snd.Beacon, 392, 250, 0, 0.7f, 0, 784, 0);
                         // say it only once per target, never in the middle of a fight
                         if (!AutoWalk && _arrivedObj != t.Obj && !Combat.InFight && !Combat.ScreenLockRunning && now - _lastArrivalAt > 3f)
                         {
@@ -779,7 +782,7 @@ namespace RCGAccess
                     if (dist > 2f) _arrivedSaid = false;
                     if (dist > 4f && _arrivedObj == t.Obj) _arrivedObj = null;
                     // the beacon pauses while an enemy is close (the enemy knock has priority), unless guiding to a beggar
-                    bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar;
+                    bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && !IgnoresEnemies(t);
                     if (now >= _nextBeep && !enemyClose)
                     {
                         _nextBeep = now + Mathf.Lerp(0.2f, 1.2f, Mathf.Clamp01(dist / 30f));
@@ -800,6 +803,7 @@ namespace RCGAccess
                 case Kind.Exit: return t.IsEdge ? " " + Loc.T("hint_walk", Loc.T("edir_" + t.Dir.ToString().ToLower())) : " " + Loc.T("hint_hold", GameInfo.ButtonName(2));
                 case Kind.Climb: return " " + Loc.T("hint_climb");
                 case Kind.Beggar: return " " + Loc.T("hint_beggar");
+                case Kind.Boss: return " " + Loc.T("hint_boss");
                 case Kind.Item:
                     {
                         InteractEntity ie = t.Obj as InteractEntity;
@@ -832,8 +836,8 @@ namespace RCGAccess
         {
             if (Guide) { StopGuide(Loc.T("guide_off")); return; }
             if (AutoWalk) StopWalk(null);
-            if (_targets.Count == 0) BuildTargets();
-            Target t = Current;
+            if (_targets.Count == 0 || (BossHelp.Boss != null && BossHelp.BossVulnerable(BossHelp.Boss))) BuildTargets();
+            Target t = BossTarget() ?? Current;
             RCG.Player p = GameInfo.Player;
             if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
             if (t.Obj != null && t.Obj == _cameDoor) { _cameDoor = null; _cameDone = true; }
@@ -876,12 +880,13 @@ namespace RCGAccess
                 StopGuide(picked ? null : Loc.T("guide_lost"));
                 return;
             }
+            if (t.Kind == Kind.Boss && !BossHelp.BossVulnerable(t.Obj as EnemyEnitity)) { StopGuide(Loc.T("boss_walk_over")); return; }
             Vector3 pos = p.transform.position;
             Vector3 goal = t.Pos;
             if (GuideArrived(t, pos))
             {
                 StopGuide(null);
-                Speech.Tone(392, 250, 0, 0.7f, 0, 784, 0);
+                Speech.Tone(Snd.Beacon, 392, 250, 0, 0.7f, 0, 784, 0);
                 _arrivedSaid = true;
                 _arrivedObj = t.Obj;
                 string text = t.Kind == Kind.Exit && t.IsEdge ? Loc.T("guide_edge", t.Label(), EdgeWord(t.Dir)) : Loc.T("arrived", t.Label()) + ArrivalHint(t);
@@ -912,7 +917,7 @@ namespace RCGAccess
             float dx = w.x - pos.x, dz = w.z - pos.z;
             float gdx = goal.x - pos.x, gdz = goal.z - pos.z;
             float gdist = Mathf.Sqrt(gdx * gdx + gdz * gdz);
-            bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar;
+            bool enemyClose = Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && !IgnoresEnemies(t);
 
             // spoken hints: a new stretch of the way, and jumps
             bool landing = _gJumps.Contains(_gIdx);
@@ -938,8 +943,8 @@ namespace RCGAccess
                 if (EdgeDistance(pos, hs) < 0.5f && now - _gEdgeToneAt > 0.4f)
                 {
                     _gEdgeToneAt = now;
-                    Speech.Tone(1400, 50, GameInfo.Pan(hs, 1f) * 0.6f, 0.8f, 1, 1400, 0);
-                    Speech.Tone(1870, 70, GameInfo.Pan(hs, 1f) * 0.6f, 0.8f, 1, 1870, 70);
+                    Speech.Tone(Snd.Beacon, 1400, 50, GameInfo.Pan(hs, 1f) * 0.6f, 0.8f, 1, 1400, 0);
+                    Speech.Tone(Snd.Beacon, 1870, 70, GameInfo.Pan(hs, 1f) * 0.6f, 0.8f, 1, 1870, 70);
                 }
             }
             if (!inAir && (Mathf.Abs(dx) > 0.12f || Mathf.Abs(dz) > 0.1f))
@@ -976,7 +981,7 @@ namespace RCGAccess
             if (off > 0.2f) f *= Mathf.Lerp(1.15f, 1.9f, Mathf.Clamp01((off - 0.2f) / 3f));
             else if (off < -0.2f) f *= Mathf.Lerp(0.87f, 0.5f, Mathf.Clamp01((-off - 0.2f) / 3f));
             float pan = Mathf.Abs(dx) < 0.3f ? 0f : GameInfo.Pan(dx, 3f);
-            Speech.Tone(f, 70, pan, 0.6f, 0, f, 0);
+            Speech.Tone(Snd.Beacon, f, 70, pan, 0.6f, 0, f, 0);
         }
 
         /// <summary>"rechts 3 Meter, 1 Meter nach oben" for the next stretch of the way.</summary>
@@ -1016,7 +1021,7 @@ namespace RCGAccess
                 if (_hazardWarned.TryGetValue(id, out last) && now - last < 6f) continue;
                 _hazardWarned[id] = now;
                 float pan = GameInfo.Pan(cp.x - pp.x, 3f);
-                Speech.Tone(300, 260, pan, 0.8f, 0, 150, 0);
+                Speech.Tone(Snd.Hazard, 300, 260, pan, 0.8f, 0, 150, 0);
                 // spoken once when coming to this pit, again only after having been away from it
                 if (!_hazardSpoken.Contains(id) && !AutoWalk)
                 {
@@ -1099,8 +1104,8 @@ namespace RCGAccess
                 if (_hazardWarned.TryGetValue(id, out last) && now - last < 1.5f) continue;
                 _hazardWarned[id] = now;
                 float pan = Combat.StrongPan(dx);
-                Speech.Tone(1400, 40, pan, 0.6f, 0, 2100, 0);
-                Speech.Tone(1400, 40, pan, 0.6f, 0, 2100, 90);
+                Speech.Tone(Snd.Hazard, 1400, 40, pan, 0.6f, 0, 2100, 0);
+                Speech.Tone(Snd.Hazard, 1400, 40, pan, 0.6f, 0, 2100, 90);
                 if (now - _toySpeechAt > 4f && !AutoWalk)
                 {
                     _toySpeechAt = now;
@@ -1123,7 +1128,7 @@ namespace RCGAccess
                 {
                     // leaving the area of a door or object: short falling tone
                     if (_inRange.Remove(rid) && !locked && Settings.Interact && !e.AutoInteract && !GameInfo.Quiet && !(e is PickupObject))
-                        Speech.Tone(880, 120, 0, 0.45f, 1, 440, 0);
+                        Speech.Tone(Snd.Interact, 880, 120, 0, 0.45f, 1, 440, 0);
                     return;
                 }
                 _inRange.Add(rid);
@@ -1162,7 +1167,7 @@ namespace RCGAccess
                 string what = Describe(e);
                 bool hold = e is Door || e._howLongToHold > 0f;
                 string act = hold ? Loc.T("hint_hold", GameInfo.ButtonName(2)) : Loc.T("hint_press", GameInfo.ButtonName(2));
-                Speech.Tone(660, 60, 0, 0.5f, 1, 990, 0);
+                Speech.Tone(Snd.Interact, 660, 60, 0, 0.5f, 1, 990, 0);
                 if (isWeapon) Speech.Say(Loc.T("weapon_short", what, GameInfo.ButtonName(2)), false);
                 else Speech.Say(what + ". " + act, !Combat.InFight);
             }
@@ -1186,16 +1191,26 @@ namespace RCGAccess
             return GameInfo.Readable(e.name);
         }
 
+        /// <summary>Targets that are walked to although enemies are close (begging enemy, stunned boss).</summary>
+        private static bool IgnoresEnemies(Target t) { return t.Kind == Kind.Beggar || t.Kind == Kind.Boss; }
+
+        /// <summary>A stunned boss always comes first: pressing the stick then leads straight to it.</summary>
+        private static Target BossTarget()
+        {
+            foreach (Target x in _targets) if (x.Kind == Kind.Boss) return x;
+            return null;
+        }
+
         // ---------------- guided walking ----------------
         public static void ToggleWalk()
         {
             if (AutoWalk) { StopWalk(Loc.T("walk_off")); return; }
             if (GameInfo.Quiet) return;
             BuildTargets();
-            Target t = Current;
+            Target t = BossTarget() ?? Current;
             RCG.Player p = GameInfo.Player;
             if (t == null || p == null) { Speech.Say(Loc.T("no_targets"), true); return; }
-            if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && t.Kind != Kind.Beggar) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
+            if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f && !IgnoresEnemies(t)) { Speech.Say(Loc.T("walk_enemy_no"), true); return; }
             if (t.Obj != null && t.Obj == _cameDoor) { _cameDoor = null; _cameDone = true; } // the player wants to go back
             if (Guide) { Guide = false; _guideTarget = null; }
             _walkTarget = t;
@@ -1257,7 +1272,7 @@ namespace RCGAccess
         private static void Arrive(Target t, string text)
         {
             StopWalk(null);
-            Speech.Tone(392, 250, 0, 0.7f, 0, 784, 0);
+            Speech.Tone(Snd.Beacon, 392, 250, 0, 0.7f, 0, 784, 0);
             _arrivedSaid = true;
             _arrivedObj = t.Obj;
             if (text != null) SayArrival(text);
@@ -1340,6 +1355,18 @@ namespace RCGAccess
                 EnemyEnitity be = t.Obj as EnemyEnitity;
                 if (p.Puppet != null && p.Puppet.IsMaster) { Arrive(t, null); return false; } // grabbed: the grab message follows
                 if (be == null || !Combat.IsBegging(be)) { StopWalk(Loc.T("beg_over")); return false; }
+            }
+            else if (t.Kind == Kind.Boss)
+            {
+                EnemyEnitity bo = t.Obj as EnemyEnitity;
+                if (bo == null || !BossHelp.BossVulnerable(bo)) { StopWalk(Loc.T("boss_walk_over")); return false; }
+                Vector3 bp = bo.transform.position, mp = p.transform.position;
+                if (Mathf.Abs(bp.x - mp.x) < 0.9f && Mathf.Abs(bp.z - mp.z) < 0.25f)
+                {
+                    Arrive(t, Loc.T("boss_arrived", Combat.EnemyName(bo)));
+                    return false;
+                }
+                beggar = true; // walk straight in, replan often
             }
             else if (Settings.AutoWalkStopForEnemies && Combat.NearestHostileDist < 4.5f) { StopWalk(Loc.T("walk_enemy")); return false; }
             Vector3 pos = p.transform.position;
@@ -1436,7 +1463,7 @@ namespace RCGAccess
             v = Mathf.Abs(dz) > 0.08f ? (dz > 0 ? 1 : -1) : 0;
             // run on long horizontal stretches (the game only runs sideways)
             float gdist = Mathf.Sqrt(gdx * gdx + gdz * gdz);
-            WalkRun = Settings.WalkRun && h != 0 && Mathf.Abs(dx) > 1.6f && gdist > 3f && !beggar && t.Kind != Kind.Item;
+            WalkRun = Settings.WalkRun && h != 0 && Mathf.Abs(dx) > 1.6f && gdist > 3f && (!beggar || t.Kind == Kind.Boss) && t.Kind != Kind.Item;
             // squeaky floor in the way: jump over it (the path finder only crosses it where it has to, at its narrowest)
             // furniture or a step in the way that the path goes over: jump onto it
             WalkJump = false;
@@ -1660,13 +1687,13 @@ namespace RCGAccess
                 float pan = blockedH ? h : 0;
                 if (kind == 2)
                 {
-                    Speech.Tone(170, 45, pan * 0.8f, 0.8f, 1, 150, 0);
-                    Speech.Tone(170, 45, pan * 0.8f, 0.8f, 1, 150, 120);
+                    Speech.Tone(Snd.Wall, 170, 45, pan * 0.8f, 0.8f, 1, 150, 0);
+                    Speech.Tone(Snd.Wall, 170, 45, pan * 0.8f, 0.8f, 1, 150, 120);
                 }
                 else
                 {
                     float f = blockedV && !blockedH ? (v > 0 ? 140 : 70) : 90;
-                    Speech.Tone(f, 160, pan, 0.8f, 3, f, 0);
+                    Speech.Tone(Snd.Wall, f, 160, pan, 0.8f, 3, f, 0);
                 }
             }
             if (kind == 2)
