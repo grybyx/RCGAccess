@@ -564,5 +564,123 @@ namespace RCGAccess
         }
 
         public static void LateUpdate() { }
+
+        // ---------------- on-screen display (for sighted helpers; speech stays the same) ----------------
+        private static Texture2D _texDim, _texPanel, _texSel, _texLine;
+        private static GUIStyle _stTitle, _stPath, _stName, _stNameSel, _stValue, _stValueSel, _stHelp, _stKeys;
+        private static int _styleFor = -1;
+        private static bool _drawErr;
+
+        private static Texture2D Tex(Color c)
+        {
+            Texture2D t = new Texture2D(1, 1);
+            t.hideFlags = HideFlags.HideAndDontSave;
+            t.SetPixel(0, 0, c);
+            t.Apply();
+            return t;
+        }
+
+        private static GUIStyle Style(int size, Color c, TextAnchor a, bool bold, bool wrap)
+        {
+            GUIStyle st = new GUIStyle(GUI.skin.label);
+            st.fontSize = size;
+            st.normal.textColor = c;
+            st.alignment = a;
+            st.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+            st.wordWrap = wrap;
+            st.richText = false;
+            st.clipping = TextClipping.Clip;
+            return st;
+        }
+
+        private static void MakeStyles(float k)
+        {
+            if (_texDim == null) _texDim = Tex(new Color(0f, 0f, 0f, 0.6f));
+            if (_texPanel == null) _texPanel = Tex(new Color(0.08f, 0.06f, 0.14f, 0.94f));
+            if (_texSel == null) _texSel = Tex(new Color(1f, 0.84f, 0.25f, 1f));
+            if (_texLine == null) _texLine = Tex(new Color(0.95f, 0.35f, 0.65f, 1f));
+            int key = Mathf.RoundToInt(k * 100);
+            if (_styleFor == key && _stTitle != null) return;
+            _styleFor = key;
+            Color white = new Color(0.97f, 0.97f, 0.97f), grey = new Color(0.78f, 0.78f, 0.84f), dark = new Color(0.08f, 0.06f, 0.14f), pink = new Color(1f, 0.55f, 0.78f);
+            _stTitle = Style(Mathf.RoundToInt(34 * k), pink, TextAnchor.MiddleLeft, true, false);
+            _stPath = Style(Mathf.RoundToInt(24 * k), grey, TextAnchor.MiddleRight, false, false);
+            _stName = Style(Mathf.RoundToInt(27 * k), white, TextAnchor.MiddleLeft, false, false);
+            _stNameSel = Style(Mathf.RoundToInt(27 * k), dark, TextAnchor.MiddleLeft, true, false);
+            _stValue = Style(Mathf.RoundToInt(27 * k), new Color(0.6f, 0.9f, 1f), TextAnchor.MiddleRight, false, false);
+            _stValueSel = Style(Mathf.RoundToInt(27 * k), dark, TextAnchor.MiddleRight, true, false);
+            _stHelp = Style(Mathf.RoundToInt(23 * k), white, TextAnchor.UpperLeft, false, true);
+            _stKeys = Style(Mathf.RoundToInt(20 * k), grey, TextAnchor.MiddleCenter, false, true);
+        }
+
+        /// <summary>Called from the runner's OnGUI while the menu is open: a panel with the current (sub)menu, the
+        /// entries with their values, the selected entry highlighted, its help text and the controls.</summary>
+        public static void Draw()
+        {
+            if (!_open || _closing || _entries == null || _entries.Count == 0) return;
+            try
+            {
+                float k = Mathf.Clamp(Screen.height / 1080f, 0.6f, 2.5f);
+                MakeStyles(k);
+                GUI.depth = -1000;
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _texDim);
+                float pw = Mathf.Min(1150f * k, Screen.width - 40f), ph = Mathf.Min(900f * k, Screen.height - 40f);
+                float px = (Screen.width - pw) / 2f, py = (Screen.height - ph) / 2f;
+                GUI.DrawTexture(new Rect(px, py, pw, ph), _texPanel);
+                GUI.DrawTexture(new Rect(px, py, pw, 5f * k), _texLine);
+                float pad = 28f * k;
+                float x = px + pad, w = pw - 2 * pad, y = py + 18f * k;
+
+                // title and where you are
+                GUI.Label(new Rect(x, y, w * 0.45f, 48f * k), "RCGAccess " + Mod.Version, _stTitle);
+                List<string> path = new List<string>();
+                foreach (KeyValuePair<List<Entry>, int> kv in _stack)
+                    if (kv.Value >= 0 && kv.Value < kv.Key.Count) path.Add(Loc.T(kv.Key[kv.Value].Key));
+                string where = path.Count > 0 ? string.Join(" › ", path.ToArray()) : Loc.T("view_main");
+                GUI.Label(new Rect(x + w * 0.45f, y, w * 0.55f, 48f * k), where + "   " + Loc.T("pos", _index + 1, _entries.Count), _stPath);
+                y += 56f * k;
+                GUI.DrawTexture(new Rect(x, y, w, 2f * k), _texLine);
+                y += 12f * k;
+
+                // help text of the selected entry (measured first so the list knows its room)
+                Entry cur = _entries[_index];
+                string help = cur is SubMenu ? null : Loc.TryT(cur.Key + "_help");
+                if (help != null && (cur.Key == "m_countbtn" || cur.Key == "m_padkeys")) help += " " + Bindings.UsageNote();
+                float keysH = 58f * k;
+                float helpH = help != null ? Mathf.Min(_stHelp.CalcHeight(new GUIContent(help), w), 190f * k) : 0f;
+                float listH = py + ph - pad - keysH - (helpH > 0 ? helpH + 22f * k : 0f) - y;
+
+                // the entries
+                float rowH = 46f * k;
+                int rows = Mathf.Max(3, Mathf.FloorToInt(listH / rowH));
+                int first = Mathf.Clamp(_index - rows / 2, 0, Mathf.Max(0, _entries.Count - rows));
+                for (int i = first; i < _entries.Count && i < first + rows; i++)
+                {
+                    Entry e = _entries[i];
+                    bool sel = i == _index;
+                    Rect r = new Rect(x, y + (i - first) * rowH, w, rowH - 4f * k);
+                    if (sel) GUI.DrawTexture(r, _texSel);
+                    string name = e is SubMenu ? Loc.T(e.Key) + "  ›" : e.Key == "m_voice" ? Loc.T("m_voice", LanguageName(Speech.VoiceLcid() & 0x3FF)) : Loc.T(e.Key);
+                    string val = "";
+                    try { val = e.Value(); } catch { }
+                    Rect rn = new Rect(r.x + 14f * k, r.y, r.width * (val.Length > 0 ? 0.6f : 1f) - 14f * k, r.height);
+                    Rect rv = new Rect(r.x + r.width * 0.6f, r.y, r.width * 0.4f - 14f * k, r.height);
+                    GUI.Label(rn, (sel ? "► " : "   ") + name, sel ? _stNameSel : _stName);
+                    if (val.Length > 0) GUI.Label(rv, val, sel ? _stValueSel : _stValue);
+                }
+                if (first > 0) GUI.Label(new Rect(x, y - 14f * k, w, 14f * k), "▲", _stKeys);
+                if (first + rows < _entries.Count) GUI.Label(new Rect(x, y + rows * rowH - 6f * k, w, 18f * k), "▼", _stKeys);
+
+                // help and controls
+                float by = py + ph - pad - keysH;
+                if (help != null)
+                {
+                    GUI.DrawTexture(new Rect(x, by - helpH - 14f * k, w, 2f * k), _texLine);
+                    GUI.Label(new Rect(x, by - helpH - 6f * k, w, helpH), help, _stHelp);
+                }
+                GUI.Label(new Rect(x, by, w, keysH), Loc.T("view_keys"), _stKeys);
+            }
+            catch (Exception e) { if (!_drawErr) { _drawErr = true; Log.Error("ModMenu.Draw", e); } }
+        }
     }
 }

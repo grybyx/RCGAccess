@@ -8,6 +8,8 @@ Neu in Version 0.4.6
 - Benommener Boss als Navigator-Ziel: Liegt Hibari benommen am Boden, steht sie ganz oben in der Zielliste. Linken
   Stick drücken führt dich direkt zu ihr (auch zwischen Gegnern, mit Rennen); "Bei Hibari. Angreifen!", sobald du
   nah genug auf ihrer Linie stehst. Rechten Stick drücken führt mit Ton hin. Steht sie wieder auf, endet die Führung.
+- Das Mod-Menü ist jetzt auch auf dem Bildschirm zu sehen (für sehende Helfer): Menüname, alle Einträge mit Wert,
+  der gewählte Eintrag hervorgehoben, darunter seine Hilfe und die Tasten. Die Sprachausgabe bleibt gleich.
 
 Neu in Version 0.4.5
 - Neu unter Gegner und Kampf: "Schaden an Bossen" (normal, doppelt, vierfach, ein Treffer pro Phase). Bosse haben

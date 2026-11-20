@@ -46,7 +46,7 @@ Get the ready-to-use build from **[Releases](../../releases/latest)**: `RCGAcces
 - **Bosses:** own locator sound (in the air, on your line, can be hit now), announced boss moves; with Hibari a calculated spot for the homing needle and guidance to her while she is stunned (left stick).
 - **Damage protection** (optional): half damage or invulnerable.
 - **Boss help** (optional): double or fourfold damage to bosses, or one hit per fight phase; "Ease boss mechanics" makes special boss tasks succeed (Hibari's needle always hits).
-- **Mod menu (F11)** with submenus: every feature can be switched on or off, features with their own sound play it, "Listen to all sounds" explains all sounds. It opens on the first start, before the game begins.
+- **Mod menu (F11)** with submenus: every feature can be switched on or off, features with their own sound play it, "Listen to all sounds" explains all sounds. It opens on the first start, before the game begins. The menu is also shown on screen (entries, values, the selected entry and its help) for sighted helpers.
 
 ## Installation
 
@@ -148,7 +148,7 @@ Die fertige Version gibt es unter **[Releases](../../releases/latest)**. Die Dat
 - **Bosse:** eigenes Ortungsgeräusch (in der Luft, auf deiner Linie, jetzt treffbar), Ansage der Boss-Angriffe; bei Hibari eine berechnete Stelle für die Zielnadel und Hinführen zu ihr, solange sie benommen ist (linker Stick).
 - **Schutz vor Schaden** (wählbar): halber Schaden oder unverwundbar.
 - **Boss-Hilfe** (wählbar): doppelter oder vierfacher Schaden an Bossen oder ein Treffer pro Kampfphase; „Boss-Mechaniken erleichtern“ lässt besondere Boss-Aufgaben gelingen (Hibaris Nadel trifft immer).
-- **Mod-Menü (F11)** mit Untermenüs: Alle Funktionen lassen sich einzeln schalten, jede Funktion mit eigenem Ton spielt ihn vor, „Alle Töne anhören“ erklärt alle Töne. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt.
+- **Mod-Menü (F11)** mit Untermenüs: Alle Funktionen lassen sich einzeln schalten, jede Funktion mit eigenem Ton spielt ihn vor, „Alle Töne anhören“ erklärt alle Töne. Beim ersten Start öffnet sich das Menü, bevor das Spiel beginnt. Das Menü ist auch auf dem Bildschirm zu sehen (Einträge, Werte, gewählter Eintrag mit Hilfe), für sehende Helfer.
 
 ## Installation
 

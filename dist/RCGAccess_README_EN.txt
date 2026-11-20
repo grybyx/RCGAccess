@@ -7,6 +7,8 @@ New in version 0.4.6
 - Stunned boss as a navigator target: while Hibari lies stunned, she is at the top of the target list. Pressing the
   left stick leads you straight to her (also past enemies, running); "At Hibari. Attack!" once you are close on her
   line. Pressing the right stick guides you there with the tone. When she gets up, guiding ends.
+- The mod menu is now also shown on screen (for sighted helpers): menu name, all entries with their values, the
+  selected entry highlighted, its help and the controls below. Speech stays the same.
 
 New in version 0.4.5
 - New under Enemies and fighting: "Damage to bosses" (normal, double, fourfold, one hit per phase). Bosses have fixed

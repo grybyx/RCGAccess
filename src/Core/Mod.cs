@@ -117,6 +117,11 @@ namespace RCGAccess
             catch (Exception e) { Log.Error("Update", e); }
         }
 
+        private void OnGUI()
+        {
+            if (ModMenu.IsOpen) ModMenu.Draw();
+        }
+
         private void LateUpdate()
         {
             try

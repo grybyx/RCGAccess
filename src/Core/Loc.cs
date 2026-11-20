@@ -45,6 +45,8 @@ namespace RCGAccess
             A("on", "an", "on");
             A("off", "aus", "off");
             A("pos", "{0} von {1}", "{0} of {1}");
+            A("view_main", "Hauptmenü", "Main menu");
+            A("view_keys", "Hoch/Runter: wählen   ·   Links/Rechts: ändern   ·   A/Enter: auslösen   ·   B/Rücktaste: zurück   ·   Y/F1: Hilfe   ·   Start/F11: speichern und schließen", "Up/Down: select   ·   Left/Right: change   ·   A/Enter: activate   ·   B/Backspace: back   ·   Y/F1: help   ·   Start/F11: save and close");
             A("lang_auto", "automatisch wie das Spiel", "automatic, like the game");
             A("voice_auto", "automatisch", "automatic");
             A("unit_m", "Meter", "meters");
