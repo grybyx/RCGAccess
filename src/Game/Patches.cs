@@ -115,11 +115,40 @@ namespace RCGAccess
         {
             try
             {
-                string s = UiReader.ReadFields(__instance, "_fileText", "_progressText", "_mainAreaText", "_subAreaText");
-                if (s.Length > 0) UiReader.OnSpecificFocus(__instance, s);
-                else UiReader.OnHover(__instance);
+                UI_FileSelectOption f = __instance;
+                UiReader.OnSpecificFocus(f, () => UiReader.ReadFields(f, "_fileText", "_progressText", "_mainAreaText", "_subAreaText"));
             }
             catch (Exception e) { Log.Error("FileHoverPost", e); }
+        }
+
+        private static readonly FieldInfo _modeOptionText = typeof(UI_ModeSelectOption).GetField("OptionText", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        /// <summary>"Title, value" of a mode option (players, difficulty, friendly fire). The title is the child named
+        /// "...Title"; hint texts like "How many players? >>" are left out. Empty while the title is not shown yet.</summary>
+        private static string ModeText(UI_ModeSelectOption o)
+        {
+            if (o == null) return "";
+            TMP_Text vt = _modeOptionText != null ? _modeOptionText.GetValue(o) as TMP_Text : null;
+            string value = vt != null ? GameInfo.Clean(vt.text) : "";
+            // the title sits next to the value text (e.g. DifficultyOption/DifficultyTitle beside DifficultyOption/ChoiceText)
+            string title = "";
+            List<Transform> roots = new List<Transform>();
+            if (vt != null && vt.transform.parent != null) roots.Add(vt.transform.parent);
+            roots.Add(o.transform);
+            foreach (Transform r in roots)
+            {
+                foreach (TMP_Text t in r.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    if (t == vt || t.name.IndexOf("Title", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                    string c = GameInfo.Clean(t.text);
+                    if (c.Length > 0 && !c.Contains(">>")) { title = c; break; }
+                }
+                if (title.Length > 0) break;
+            }
+            if (title.Length == 0 && Time.realtimeSinceStartup - UiReader.ScreenChangedAt < 2.4f) return "";
+            if (title.Length == 0) return value;
+            if (value.Length == 0 || string.Equals(title, value, StringComparison.OrdinalIgnoreCase)) return title;
+            return title + ", " + value;
         }
 
         public static void ModeHoverPost(UI_ModeSelectOption __instance, bool __0)
@@ -127,21 +156,8 @@ namespace RCGAccess
             try
             {
                 if (!__0) return;
-                List<string> parts = new List<string>();
-                // the option title (e.g. "Schwierigkeit") is a sibling of the value text
-                Transform root = __instance.transform.parent != null ? __instance.transform.parent : __instance.transform;
-                TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(false);
-                if (texts.Length > 4) texts = __instance.GetComponentsInChildren<TMP_Text>(false);
-                foreach (TMP_Text t in texts)
-                {
-                    if (t.GetComponentInParent<UI_ModeSelectOption>() != null && t.GetComponentInParent<UI_ModeSelectOption>() != __instance) continue;
-                    string s = GameInfo.Clean(t.text);
-                    if (s.Length > 0 && !parts.Contains(s)) parts.Add(s);
-                }
-                // title first, current value last
-                string opt = UiReader.ReadFields(__instance, "OptionText");
-                if (opt.Length > 0) { parts.Remove(opt); parts.Add(opt); }
-                if (parts.Count > 0) UiReader.OnSpecificFocus(__instance, string.Join(", ", parts.ToArray()));
+                UI_ModeSelectOption o = __instance;
+                UiReader.OnSpecificFocus(o, () => ModeText(o));
             }
             catch (Exception e) { Log.Error("ModeHoverPost", e); }
         }
@@ -289,7 +305,7 @@ namespace RCGAccess
             try
             {
                 UI_MenuScreen s = __instance.CurrentScreen;
-                if (s != null) Log.Write("Menue-Bildschirm: " + s.ScreenName + " (" + __instance.name + ")");
+                if (s != null) { Log.Write("Menue-Bildschirm: " + s.ScreenName + " (" + __instance.name + ")"); UiReader.ScreenChangedAt = Time.realtimeSinceStartup; }
             }
             catch { }
         }

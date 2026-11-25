@@ -1,5 +1,20 @@
 RCGAccess – Zugänglichkeits-Mod für River City Girls
-Version 0.4.6
+Version 0.4.8
+
+Neu in Version 0.4.8
+- Modusauswahl: Der Name jeder Option wird jetzt sicher mitgelesen ("Schwierigkeit, Normal" statt nur "Normal").
+- Waffen-Hinweise ("Waffe Bank, X") kommen je Waffenart höchstens alle 15 Sekunden, im Kampf alle 40 Sekunden,
+  statt bei jeder Bank erneut.
+- Bushaltestellen-Ankunftspunkte erscheinen nicht mehr als zweite Tür im Navigator (z. B. "Tür nach Hintergasse"
+  in Stadtstraßen 2, "Tür nach Schrottplatz" im Bahnhof), zu denen das Hinführen nie ankam.
+
+Neu in Version 0.4.7
+- Hauptmenü, Dateiauswahl: Beim Betreten wird der gewählte Spielstand vollständig gelesen ("Datei A, Fertigstellung
+  35 %, Downtown, Stadtstraßen") statt "Sub-area" und durcheinander gelesener Texte der anderen Spielstände.
+- Modusauswahl: Jede Option wird mit Namen und Wert gelesen ("Anzahl der Spieler, 1 Spieler"), der Hinweis
+  "How many players? >>" entfällt. Beim Umschalten (z. B. Normal/Schwer) wird der neue Wert sofort gesagt, auch bei
+  schnellem Hin- und Herschalten.
+- Missionsmeldungen, die beim Laden eines Spielstands im Hauptmenü auftauchen, werden nicht mehr vorgelesen.
 
 Neu in Version 0.4.6
 - Boss-Mechaniken erleichtern, Hibari: Die Nadel trifft jetzt wirklich jedes Mal. Vorher prallte sie oft gar nicht

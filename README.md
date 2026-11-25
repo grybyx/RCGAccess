@@ -4,7 +4,7 @@
 
 RCGAccess makes the beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) playable for blind and visually impaired players. The mod reads menus, dialogs and pop-ups in the game's language, through the modern Windows OneCore voices, classic SAPI voices or your own screen reader. It adds orientation sounds for enemies, exits, items and health, and a navigator that guides you to doors and goals.
 
-> **Pre-release (beta), 0.4.6.** Tested into the third area (Shopping district), up to and including the boss Hibari. Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
+> **Pre-release (beta), 0.4.8.** Tested into the third area (Shopping district), up to and including the boss Hibari. Bug reports are welcome, see [Reporting bugs](#reporting-bugs).
 
 ## About the game
 
@@ -106,7 +106,7 @@ After playing, run `RCGAccess_Daten_sammeln.bat` in the game folder. It puts a Z
 
 RCGAccess macht das Beat 'em up **[River City Girls](https://store.steampowered.com/app/1049320/River_City_Girls/)** (Steam, PC) für blinde und sehbehinderte Spielerinnen und Spieler spielbar. Der Mod liest Menüs, Dialoge und Einblendungen in der Sprache des Spiels vor, wahlweise mit den modernen Windows-Stimmen (OneCore), klassischen SAPI-Stimmen oder über deinen Screenreader. Dazu kommen Orientierungstöne für Gegner, Ausgänge, Gegenstände und Gesundheit sowie ein Navigator, der dich zu Türen und Zielen führt.
 
-> **Vorabversion (Beta), 0.4.6.** Getestet ist das Spiel bis in das dritte Gebiet (Einkaufsviertel), einschließlich des Bosses Hibari. Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
+> **Vorabversion (Beta), 0.4.8.** Getestet ist das Spiel bis in das dritte Gebiet (Einkaufsviertel), einschließlich des Bosses Hibari. Fehlerberichte sind willkommen, siehe [Fehler melden](#fehler-melden).
 
 ## Über das Spiel
 

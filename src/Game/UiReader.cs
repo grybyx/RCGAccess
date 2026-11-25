@@ -15,6 +15,10 @@ namespace RCGAccess
         // ---------- focus (hovered menu entry) ----------
         private static Component _pendingFocus;
         private static string _pendingSpecific;
+        private static Func<string> _pendingRefresh, _focusRefresh;  // re-reads the focused option (own option classes, not UI_InputSelectable)
+        private static float _pendingSince, _pendingStableSince;
+        private static string _pendingLast;
+        public static float ScreenChangedAt = -10f;
         private static int _pendingFrame;
         private static Component _focus;
         private static string _focusText = "";
@@ -138,7 +142,23 @@ namespace RCGAccess
             if (sel == null || string.IsNullOrEmpty(text)) return;
             _pendingFocus = sel;
             _pendingSpecific = text;
+            _pendingRefresh = null;
             _pendingFrame = Time.frameCount;
+        }
+
+        /// <summary>Focus on an option whose text is built by a function: read again when it changes (value toggled)
+        /// and, right after a screen change, only once the texts are filled in and stable.</summary>
+        public static void OnSpecificFocus(Component sel, Func<string> refresh)
+        {
+            if (sel == null || refresh == null) return;
+            string text = "";
+            try { text = refresh() ?? ""; } catch { }
+            _pendingFocus = sel;
+            _pendingSpecific = text;
+            _pendingRefresh = refresh;
+            _pendingFrame = Time.frameCount;
+            _pendingSince = _pendingStableSince = Time.realtimeSinceStartup;
+            _pendingLast = text;
         }
 
         public static void OnNpcTalk(InteractEntity_QuestNPC npc, bool success)
@@ -158,6 +178,8 @@ namespace RCGAccess
                 if (msg.Length == 0) return;
                 string who = GameInfo.Clean(m.Narrator);
                 Log.Text("Dialog " + m.Character + "/" + m.Subtype, who + ": " + msg);
+                // quest messages raised while a save file is loaded in the main menu are not meant for the player
+                if (GameInfo.SceneName == "MainMenu") return;
                 bool speak;
                 switch (m.Character)
                 {
@@ -388,6 +410,15 @@ namespace RCGAccess
         {
             float now = Time.realtimeSinceStartup;
             bool focusNow = _pendingFocus != null;
+            if (focusNow && _pendingRefresh != null && now - ScreenChangedAt < 2.5f)
+            {
+                // a new screen fills and fades in its options: wait until the option text has been stable for 0.3 s
+                string cur = "";
+                try { cur = _pendingRefresh() ?? ""; } catch { }
+                if (cur != _pendingLast) { _pendingLast = cur; _pendingStableSince = now; }
+                if ((now - _pendingStableSince < 0.3f || cur.Length == 0) && now - _pendingSince < 2.5f) return;
+                _pendingSpecific = cur;
+            }
             if (focusNow || now >= _nextPoll)
             {
                 _nextPoll = now + 0.2f;
@@ -523,8 +554,10 @@ namespace RCGAccess
         {
             Component sel = _pendingFocus;
             string specific = _pendingSpecific;
+            Func<string> refresh = _pendingRefresh;
             _pendingFocus = null;
             _pendingSpecific = null;
+            _pendingRefresh = null;
             if (sel == null) return null;
             if (!SelectableShown(sel)) { Log.Verbose("Auswahl verdeckt: " + GameInfo.Path(sel.transform)); return null; }
             string text = specific ?? FocusText(sel);
@@ -533,6 +566,7 @@ namespace RCGAccess
             bool same = sel == _focus && text == _focusText;
             _focus = sel;
             _focusText = text;
+            _focusRefresh = refresh;
             _focusTime = now;
             if (same && now - _lastFocusSpokenTime < 1.5f) return null;
             if (!Settings.Menus) return null;
@@ -550,8 +584,10 @@ namespace RCGAccess
             try
             {
                 if (_focus == null || !_focus.gameObject.activeInHierarchy) { _focus = null; return; }
-                if (!(_focus is UI_InputSelectable)) return;
-                string now = FocusText(_focus);
+                string now;
+                if (_focusRefresh != null) now = _focusRefresh() ?? "";
+                else if (_focus is UI_InputSelectable) now = FocusText(_focus);
+                else return;
                 if (now == _focusText || now.Length == 0) return;
                 // speak only what changed
                 List<string> oldParts = new List<string>(_focusText.Split(new string[] { ", " }, StringSplitOptions.None));
@@ -575,6 +611,9 @@ namespace RCGAccess
                 if (lname.Contains("debug")) { st.Excluded = true; return; }
                 UI_InputSelectable sel = t.GetComponentInParent<UI_InputSelectable>();
                 if (sel != null) { st.InSelectable = true; st.Selectable = sel; }
+                // options with their own hover patch (file slots, mode options): read through the focus, never as context
+                if (t.GetComponentInParent<UI_FileSelectOption>() != null || t.GetComponentInParent<UI_ModeSelectOption>() != null)
+                    st.InSelectable = true;
                 st.Gate = FindGate(t.transform);
                 Transform tr = t.transform;
                 while (tr != null)

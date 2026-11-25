@@ -1,5 +1,20 @@
 RCGAccess – Accessibility mod for River City Girls
-Version 0.4.6
+Version 0.4.8
+
+New in version 0.4.8
+- Mode select: the name of every option is now reliably read too ("Difficulty, Normal" instead of only "Normal").
+- Weapon hints ("Weapon Bench, X") come at most every 15 seconds per kind of weapon, every 40 seconds in a fight,
+  instead of again for every bench.
+- Bus stop arrival points no longer show up as a second door in the navigator (e.g. "Door to Back Alley" in City
+  Streets 2, "Door to Junk Yard" in the Transit Station) that guiding could never reach.
+
+New in version 0.4.7
+- Main menu, file select: on entering, the selected save file is read completely ("File A, Completion 35%,
+  Downtown, City Streets") instead of "Sub-area" and jumbled texts of the other files.
+- Mode select: every option is read with its name and value ("Number of Players, 1 Player"); the hint
+  "How many players? >>" is left out. When toggling (e.g. Normal/Hard) the new value is said at once, also when
+  switching back and forth quickly.
+- Mission messages that appear while a save file is loaded in the main menu are no longer read.
 
 New in version 0.4.6
 - Ease boss mechanics, Hibari: the needle now really hits every time. Before, it often did not bounce at all because

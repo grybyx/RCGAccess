@@ -252,6 +252,27 @@ namespace RCGAccess
         }
 
         // ---------------- targets ----------------
+        /// <summary>False for doors that are only arrival points (e.g. "DoorBusStopSpawn": where the bus drops you),
+        /// with no switched-on trigger apart from the player spawn markers.</summary>
+        private static bool HasEntry(Door d)
+        {
+            try
+            {
+                if (d.name.IndexOf("Spawn", StringComparison.OrdinalIgnoreCase) < 0) return true;
+                foreach (Collider c in d.GetComponentsInChildren<Collider>(false))
+                {
+                    if (!c.enabled || !c.isTrigger) continue;
+                    if (c.name.StartsWith("Player", StringComparison.OrdinalIgnoreCase)) continue;
+                    return true;
+                }
+                return false;
+            }
+            catch { return true; }
+        }
+
+        private static readonly HashSet<string> _loggedOnce = new HashSet<string>();
+        private static void LogOnce(string s) { if (_loggedOnce.Add(s)) Log.Write(s); }
+
         public static void BuildTargets()
         {
             _targets.Clear();
@@ -278,6 +299,7 @@ namespace RCGAccess
                     Collider c;
                     if (triggers.TryGetValue(d, out c)) { t.Trigger = c; t.IsEdge = true; }
                     else if (d.GetComponent<DoorTrigger_Normal>() != null) { t.Trigger = d.GetComponent<Collider>(); t.IsEdge = true; }
+                    else if (!HasEntry(d)) { LogOnce("Tuer ohne Eingang uebergangen: " + d.name + " nach " + dd.ToScene); continue; }
                     try { t.Seen = PlayerGlobalInventory.instance == null || PlayerGlobalInventory.instance.HaveYouSeenScene(dd.ToScene); } catch { }
                     t.Name = Loc.T(t.IsEdge ? "exit_to" : "door_to", GameInfo.RoomName(dd.ToScene), Loc.T("edir_" + dd.DoorEnterDirection.ToString().ToLower()));
                     _targets.Add(t);
@@ -1116,6 +1138,8 @@ namespace RCGAccess
         }
 
         // ---------------- interaction hints (from patch) ----------------
+        private static readonly Dictionary<string, float> _weaponNameSaid = new Dictionary<string, float>();
+
         public static void OnInteractSymbol(InteractEntity e, int player, bool enabled)
         {
             try
@@ -1165,6 +1189,13 @@ namespace RCGAccess
                 if (_interactSaid.TryGetValue(id, out last) && now - last < (isWeapon ? 20f : 15f)) return;
                 _interactSaid[id] = now;
                 string what = Describe(e);
+                // several objects of the same kind (benches, crates): name each kind only now and then, rarely in a fight
+                if (isWeapon)
+                {
+                    float lastName;
+                    if (_weaponNameSaid.TryGetValue(what, out lastName) && now - lastName < (Combat.InFight ? 40f : 15f)) return;
+                    _weaponNameSaid[what] = now;
+                }
                 bool hold = e is Door || e._howLongToHold > 0f;
                 string act = hold ? Loc.T("hint_hold", GameInfo.ButtonName(2)) : Loc.T("hint_press", GameInfo.ButtonName(2));
                 Speech.Tone(Snd.Interact, 660, 60, 0, 0.5f, 1, 990, 0);

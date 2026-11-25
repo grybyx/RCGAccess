@@ -18,7 +18,7 @@ namespace RCGAccess
 
     public static class Mod
     {
-        public const string Version = "0.4.6";
+        public const string Version = "0.4.8";
         public static string GameDir;
         public static string DataDir;
         public static string ProtoDir;
